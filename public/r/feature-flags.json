@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "feature-flags",
+  "title": "Feature Flag Provider",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/feature-flags.tsx",
+      "content": "export function FeatureFlags() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "auth-guard",
+  "title": "Auth Guard",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/auth-guard.tsx",
+      "content": "export function AuthGuard() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

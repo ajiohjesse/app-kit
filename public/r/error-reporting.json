@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "error-reporting",
+  "title": "Error Reporting Boundary",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["dialog", "textarea"],
+  "files": [
+    {
+      "path": "infra/error-reporting.tsx",
+      "content": "export function ErrorReporting() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

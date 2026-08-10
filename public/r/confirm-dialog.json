@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "confirm-dialog",
+  "title": "Global Confirm Dialog",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["alert-dialog"],
+  "files": [
+    {
+      "path": "infra/confirm-dialog.tsx",
+      "content": "export function ConfirmDialog() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

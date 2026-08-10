@@ -17,4 +17,4 @@ Single-context layout with root `CONTEXT.md` and `docs/adr/`. See
 
 ### Package Manager
 
-This project uses `bun` as a package manager.
+This project uses `bun` as the package manager.

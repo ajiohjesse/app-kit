@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "draft-autosave",
+  "title": "Draft Autosave",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/draft-autosave.tsx",
+      "content": "export function DraftAutosave() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

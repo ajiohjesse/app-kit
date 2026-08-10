@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sheet-manager",
+  "title": "Drawer / Sheet Manager",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["sheet"],
+  "files": [
+    {
+      "path": "infra/sheet-manager.tsx",
+      "content": "export function SheetManager() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

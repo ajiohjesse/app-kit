@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "optimistic-mutation",
+  "title": "Optimistic Mutation Helper",
+  "description": "Placeholder registry item.",
+  "dependencies": ["@tanstack/react-query"],
+  "files": [
+    {
+      "path": "infra/optimistic-mutation.tsx",
+      "content": "export function OptimisticMutation() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

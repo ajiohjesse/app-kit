@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "unsaved-changes",
+  "title": "Unsaved Changes Guard",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["alert-dialog"],
+  "files": [
+    {
+      "path": "infra/unsaved-changes.tsx",
+      "content": "export function UnsavedChanges() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

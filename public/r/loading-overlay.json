@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "loading-overlay",
+  "title": "Global Loading Overlay",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/loading-overlay.tsx",
+      "content": "export function LoadingOverlay() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

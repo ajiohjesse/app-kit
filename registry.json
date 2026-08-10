@@ -1,0 +1,215 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "app-kit",
+  "homepage": "https://example.com",
+  "items": [
+    {
+      "name": "modal-manager",
+      "type": "registry:component",
+      "title": "Global Modal Manager",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/modal-manager.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["dialog"]
+    },
+    {
+      "name": "confirm-dialog",
+      "type": "registry:component",
+      "title": "Global Confirm Dialog",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/confirm-dialog.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["alert-dialog"]
+    },
+    {
+      "name": "alert-prompt-dialog",
+      "type": "registry:component",
+      "title": "Global Alert / Prompt Dialog",
+      "description": "Placeholder registry item.",
+      "files": [
+        {
+          "path": "infra/alert-prompt-dialog.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": ["dialog", "input"]
+    },
+    {
+      "name": "loading-overlay",
+      "type": "registry:component",
+      "title": "Global Loading Overlay",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/loading-overlay.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "action-runner",
+      "type": "registry:component",
+      "title": "Async Action Wrapper",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/action-runner.tsx", "type": "registry:component" }
+      ],
+      "dependencies": ["motion"]
+    },
+    {
+      "name": "sheet-manager",
+      "type": "registry:component",
+      "title": "Drawer / Sheet Manager",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/sheet-manager.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["sheet"]
+    },
+    {
+      "name": "command-palette",
+      "type": "registry:component",
+      "title": "Command Palette",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/command-palette.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["command", "dialog"]
+    },
+    {
+      "name": "authentication-core",
+      "type": "registry:component",
+      "title": "Authentication Core",
+      "description": "Placeholder registry item.",
+      "files": [
+        {
+          "path": "infra/authentication-core.tsx",
+          "type": "registry:component"
+        }
+      ]
+    },
+    {
+      "name": "pending-auth-action",
+      "type": "registry:component",
+      "title": "Pending Action After Auth",
+      "description": "Placeholder registry item.",
+      "files": [
+        {
+          "path": "infra/pending-auth-action.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "dependencies": ["@tanstack/react-query"]
+    },
+    {
+      "name": "auth-guard",
+      "type": "registry:component",
+      "title": "Auth Guard",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/auth-guard.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "session-refresh",
+      "type": "registry:component",
+      "title": "Session Refresh",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/session-refresh.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "optimistic-mutation",
+      "type": "registry:component",
+      "title": "Optimistic Mutation Helper",
+      "description": "Placeholder registry item.",
+      "files": [
+        {
+          "path": "infra/optimistic-mutation.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "dependencies": ["@tanstack/react-query"]
+    },
+    {
+      "name": "error-classification",
+      "type": "registry:component",
+      "title": "Error Classification",
+      "description": "Placeholder registry item.",
+      "files": [
+        {
+          "path": "infra/error-classification.tsx",
+          "type": "registry:component"
+        }
+      ],
+      "registryDependencies": ["alert"]
+    },
+    {
+      "name": "draft-autosave",
+      "type": "registry:component",
+      "title": "Draft Autosave",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/draft-autosave.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "unsaved-changes",
+      "type": "registry:component",
+      "title": "Unsaved Changes Guard",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/unsaved-changes.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["alert-dialog"]
+    },
+    {
+      "name": "feature-flags",
+      "type": "registry:component",
+      "title": "Feature Flag Provider",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/feature-flags.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "keyboard-shortcuts",
+      "type": "registry:component",
+      "title": "Keyboard Shortcut Registry",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/keyboard-shortcuts.tsx", "type": "registry:component" }
+      ]
+    },
+    {
+      "name": "offline-banner",
+      "type": "registry:component",
+      "title": "Online / Offline Detection",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/offline-banner.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["alert"]
+    },
+    {
+      "name": "idle-timeout",
+      "type": "registry:component",
+      "title": "Idle / Session Timeout",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/idle-timeout.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["alert-dialog"]
+    },
+    {
+      "name": "error-reporting",
+      "type": "registry:component",
+      "title": "Error Reporting Boundary",
+      "description": "Placeholder registry item.",
+      "files": [
+        { "path": "infra/error-reporting.tsx", "type": "registry:component" }
+      ],
+      "registryDependencies": ["dialog", "textarea"]
+    }
+  ]
+}

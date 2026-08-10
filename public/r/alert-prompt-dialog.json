@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "alert-prompt-dialog",
+  "title": "Global Alert / Prompt Dialog",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["dialog", "input"],
+  "files": [
+    {
+      "path": "infra/alert-prompt-dialog.tsx",
+      "content": "export function AlertPromptDialog() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

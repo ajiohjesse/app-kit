@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "command-palette",
+  "title": "Command Palette",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["command", "dialog"],
+  "files": [
+    {
+      "path": "infra/command-palette.tsx",
+      "content": "export function CommandPalette() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

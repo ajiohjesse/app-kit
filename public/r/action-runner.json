@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "action-runner",
+  "title": "Async Action Wrapper",
+  "description": "Placeholder registry item.",
+  "dependencies": ["motion"],
+  "files": [
+    {
+      "path": "infra/action-runner.tsx",
+      "content": "export function ActionRunner() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

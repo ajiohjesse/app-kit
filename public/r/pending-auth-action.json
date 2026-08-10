@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "pending-auth-action",
+  "title": "Pending Action After Auth",
+  "description": "Placeholder registry item.",
+  "dependencies": ["@tanstack/react-query"],
+  "files": [
+    {
+      "path": "infra/pending-auth-action.tsx",
+      "content": "export function PendingAuthAction() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

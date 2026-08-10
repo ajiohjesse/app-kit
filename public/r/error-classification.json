@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "error-classification",
+  "title": "Error Classification",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["alert"],
+  "files": [
+    {
+      "path": "infra/error-classification.tsx",
+      "content": "export function ErrorClassification() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

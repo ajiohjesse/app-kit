@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "modal-manager",
+  "title": "Global Modal Manager",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["dialog"],
+  "files": [
+    {
+      "path": "infra/modal-manager.tsx",
+      "content": "export function ModalManager() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

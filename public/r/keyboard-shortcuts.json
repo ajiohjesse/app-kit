@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "keyboard-shortcuts",
+  "title": "Keyboard Shortcut Registry",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/keyboard-shortcuts.tsx",
+      "content": "export function KeyboardShortcuts() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

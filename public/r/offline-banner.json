@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "offline-banner",
+  "title": "Online / Offline Detection",
+  "description": "Placeholder registry item.",
+  "registryDependencies": ["alert"],
+  "files": [
+    {
+      "path": "infra/offline-banner.tsx",
+      "content": "export function OfflineBanner() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

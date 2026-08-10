@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "authentication-core",
+  "title": "Authentication Core",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/authentication-core.tsx",
+      "content": "export function AuthenticationCore() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

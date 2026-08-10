@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "session-refresh",
+  "title": "Session Refresh",
+  "description": "Placeholder registry item.",
+  "files": [
+    {
+      "path": "infra/session-refresh.tsx",
+      "content": "export function SessionRefresh() { return null }\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}
