@@ -234,11 +234,9 @@ export const docs: DocItem[] = [
     shortTitle: "Feature flags",
     category: "Platform",
     problem:
-      "Flag checks are scattered and tightly coupled to whichever backend (LaunchDarkly, config file, etc.) is currently in use.",
-    questions: [
-      "Does this need real-time flag updates on the client after initial server-rendered state, or is boot-time-only sufficient for v1?",
-      "How is server-read vs. client-read state kept consistent (hydration mismatch risk if the adapter’s answer changes)?",
-    ],
+      "An adapter-first flag provider with schema-declared boolean and variant values, bootstrap snapshots, explicit refresh, and a server-only module so server-only flags never reach the client.",
+    questions: [],
+    dependencies: ["server-only"],
   },
   {
     number: 17,

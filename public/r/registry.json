@@ -165,11 +165,31 @@
     },
     {
       "name": "feature-flags",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Feature Flag Provider",
-      "description": "Placeholder registry item.",
+      "description": "Adapter-first flag provider with schema defaults, bootstrap snapshots, explicit refresh, and a server-only module.",
+      "dependencies": ["server-only"],
       "files": [
-        { "path": "infra/feature-flags.tsx", "type": "registry:component" }
+        {
+          "path": "infra/feature-flags.ts",
+          "type": "registry:lib",
+          "target": "@lib/feature-flags.ts"
+        },
+        {
+          "path": "infra/feature-flags-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/feature-flags-provider.tsx"
+        },
+        {
+          "path": "infra/feature-flags.server.ts",
+          "type": "registry:lib",
+          "target": "@lib/feature-flags.server.ts"
+        },
+        {
+          "path": "infra/feature-flags-env.d.ts",
+          "type": "registry:file",
+          "target": "@lib/feature-flags-env.d.ts"
+        }
       ]
     },
     {

@@ -5,9 +5,20 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: [
+      {
+        find: "@/infra",
+        replacement: path.resolve(__dirname, "./infra"),
+      },
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      {
+        find: "server-only",
+        replacement: path.resolve(
+          __dirname,
+          "./src/test-utils/empty-server-only.ts"
+        ),
+      },
+    ],
   },
   test: {
     environment: "jsdom",
