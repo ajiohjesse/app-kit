@@ -3,11 +3,13 @@
   "name": "confirm-dialog",
   "title": "Global Confirm Dialog",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["alert-dialog"],
+  "registryDependencies": [
+    "alert-dialog"
+  ],
   "files": [
     {
       "path": "infra/confirm-dialog.tsx",
-      "content": "export function ConfirmDialog() { return null }\n",
+      "content": "export function ConfirmDialog() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

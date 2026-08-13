@@ -3,11 +3,14 @@
   "name": "alert-prompt-dialog",
   "title": "Global Alert / Prompt Dialog",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["dialog", "input"],
+  "registryDependencies": [
+    "dialog",
+    "input"
+  ],
   "files": [
     {
       "path": "infra/alert-prompt-dialog.tsx",
-      "content": "export function AlertPromptDialog() { return null }\n",
+      "content": "export function AlertPromptDialog() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

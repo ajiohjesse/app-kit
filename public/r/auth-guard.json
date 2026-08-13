@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/auth-guard.tsx",
-      "content": "export function AuthGuard() { return null }\n",
+      "content": "export function AuthGuard() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

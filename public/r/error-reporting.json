@@ -3,11 +3,14 @@
   "name": "error-reporting",
   "title": "Error Reporting Boundary",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["dialog", "textarea"],
+  "registryDependencies": [
+    "dialog",
+    "textarea"
+  ],
   "files": [
     {
       "path": "infra/error-reporting.tsx",
-      "content": "export function ErrorReporting() { return null }\n",
+      "content": "export function ErrorReporting() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

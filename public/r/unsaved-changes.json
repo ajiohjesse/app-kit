@@ -3,11 +3,13 @@
   "name": "unsaved-changes",
   "title": "Unsaved Changes Guard",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["alert-dialog"],
+  "registryDependencies": [
+    "alert-dialog"
+  ],
   "files": [
     {
       "path": "infra/unsaved-changes.tsx",
-      "content": "export function UnsavedChanges() { return null }\n",
+      "content": "export function UnsavedChanges() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

@@ -3,11 +3,13 @@
   "name": "idle-timeout",
   "title": "Idle / Session Timeout",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["alert-dialog"],
+  "registryDependencies": [
+    "alert-dialog"
+  ],
   "files": [
     {
       "path": "infra/idle-timeout.tsx",
-      "content": "export function IdleTimeout() { return null }\n",
+      "content": "export function IdleTimeout() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

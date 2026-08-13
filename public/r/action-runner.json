@@ -3,11 +3,13 @@
   "name": "action-runner",
   "title": "Async Action Wrapper",
   "description": "Placeholder registry item.",
-  "dependencies": ["motion"],
+  "dependencies": [
+    "motion"
+  ],
   "files": [
     {
       "path": "infra/action-runner.tsx",
-      "content": "export function ActionRunner() { return null }\n",
+      "content": "export function ActionRunner() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

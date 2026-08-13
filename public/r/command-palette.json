@@ -3,11 +3,14 @@
   "name": "command-palette",
   "title": "Command Palette",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["command", "dialog"],
+  "registryDependencies": [
+    "command",
+    "dialog"
+  ],
   "files": [
     {
       "path": "infra/command-palette.tsx",
-      "content": "export function CommandPalette() { return null }\n",
+      "content": "export function CommandPalette() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

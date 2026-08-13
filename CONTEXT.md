@@ -28,6 +28,16 @@ _Avoid_: Command menu, launcher
 An independently searchable namespace of command registrations, used to decide which commands a palette host may display.
 _Avoid_: Command context, command group
 
+### Overlays
+
+**Overlay layer**:
+A registered sheet, modal, or blocking loading surface that participates in one foreground, focus, and escape protocol.
+_Avoid_: Overlay host, dialog root
+
+**Overlay composition protocol**:
+The z-order, inertness, focus-ownership, escape, and suspend/resume rules among overlay layers. Modal and sheet stacks stay separate.
+_Avoid_: Shared overlay manager
+
 ### Authentication
 
 **Auth user**:
@@ -47,8 +57,8 @@ A serializable, secret-free initial session snapshot supplied by a server render
 _Avoid_: Hydration token, client credential
 
 **Sign-in failure**:
-A normalized, provider-neutral outcome describing why an authentication attempt did not establish a session.
-_Avoid_: Raw auth error
+An expected unsuccessful `signIn` result whose payload is an `ErrorClassification`, not a parallel category union.
+_Avoid_: Raw auth error, SignInFailure category list
 
 **Pending action intent**:
 A versioned, serializable, user-scoped description of an action that may resume after authentication, identified by an idempotency key and bounded by an expiry time.
@@ -73,6 +83,10 @@ _Avoid_: Redirect callback
 **Auth guard**:
 A boundary that requires an authenticated session before allowing a protected route to render or a guarded action to execute.
 _Avoid_: Authorization guard, login redirect
+
+**Unauthenticated policy**:
+The explicit auth-guard mode: `redirect-without-resume`, `redirect-and-resume`, or `inline`.
+_Avoid_: Default redirect
 
 **Guarded action**:
 A consumer action wrapped with an auth guard that checks the current session before dispatch and may register an explicit pending action intent.

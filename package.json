@@ -16,6 +16,7 @@
     "format": "prettier --ignore-unknown --write .",
     "format:check": "prettier --ignore-unknown --check .",
     "registry:build": "bunx --bun shadcn@latest build",
+    "registry:verify": "bun scripts/verify-registry-install.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -51,6 +52,7 @@
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "lint-staged": "^17.2.0",
+    "msw": "^2.11.6",
     "postcss": "^8.5.0",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.1.0",

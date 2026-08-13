@@ -3,11 +3,13 @@
   "name": "modal-manager",
   "title": "Global Modal Manager",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["dialog"],
+  "registryDependencies": [
+    "dialog"
+  ],
   "files": [
     {
       "path": "infra/modal-manager.tsx",
-      "content": "export function ModalManager() { return null }\n",
+      "content": "export function ModalManager() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

@@ -3,11 +3,13 @@
   "name": "sheet-manager",
   "title": "Drawer / Sheet Manager",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["sheet"],
+  "registryDependencies": [
+    "sheet"
+  ],
   "files": [
     {
       "path": "infra/sheet-manager.tsx",
-      "content": "export function SheetManager() { return null }\n",
+      "content": "export function SheetManager() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

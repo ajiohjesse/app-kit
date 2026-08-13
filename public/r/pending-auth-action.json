@@ -3,11 +3,13 @@
   "name": "pending-auth-action",
   "title": "Pending Action After Auth",
   "description": "Placeholder registry item.",
-  "dependencies": ["@tanstack/react-query"],
+  "dependencies": [
+    "@tanstack/react-query"
+  ],
   "files": [
     {
       "path": "infra/pending-auth-action.tsx",
-      "content": "export function PendingAuthAction() { return null }\n",
+      "content": "export function PendingAuthAction() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

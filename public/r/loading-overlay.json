@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/loading-overlay.tsx",
-      "content": "export function LoadingOverlay() { return null }\n",
+      "content": "export function LoadingOverlay() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

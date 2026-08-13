@@ -3,11 +3,13 @@
   "name": "offline-banner",
   "title": "Online / Offline Detection",
   "description": "Placeholder registry item.",
-  "registryDependencies": ["alert"],
+  "registryDependencies": [
+    "alert"
+  ],
   "files": [
     {
       "path": "infra/offline-banner.tsx",
-      "content": "export function OfflineBanner() { return null }\n",
+      "content": "export function OfflineBanner() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/feature-flags.tsx",
-      "content": "export function FeatureFlags() { return null }\n",
+      "content": "export function FeatureFlags() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

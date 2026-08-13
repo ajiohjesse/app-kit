@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/authentication-core.tsx",
-      "content": "export function AuthenticationCore() { return null }\n",
+      "content": "export function AuthenticationCore() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

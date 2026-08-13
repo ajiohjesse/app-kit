@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/draft-autosave.tsx",
-      "content": "export function DraftAutosave() { return null }\n",
+      "content": "export function DraftAutosave() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

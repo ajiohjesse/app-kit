@@ -3,11 +3,13 @@
   "name": "optimistic-mutation",
   "title": "Optimistic Mutation Helper",
   "description": "Placeholder registry item.",
-  "dependencies": ["@tanstack/react-query"],
+  "dependencies": [
+    "@tanstack/react-query"
+  ],
   "files": [
     {
       "path": "infra/optimistic-mutation.tsx",
-      "content": "export function OptimisticMutation() { return null }\n",
+      "content": "export function OptimisticMutation() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],

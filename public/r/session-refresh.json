@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "infra/session-refresh.tsx",
-      "content": "export function SessionRefresh() { return null }\n",
+      "content": "export function SessionRefresh() {\n  return null;\n}\n",
       "type": "registry:component"
     }
   ],
