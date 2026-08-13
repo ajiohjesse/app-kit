@@ -255,10 +255,8 @@ export const docs: DocItem[] = [
     shortTitle: "Offline detection",
     category: "Platform",
     problem:
-      "No consistent handling of network loss; actions attempted while offline just fail with unclear errors.",
-    questions: [
-      "Is the retry queue in scope for v1, or is this purely a passive status banner initially?",
-    ],
+      "A connectivity snapshot (`unknown` | `online` | `offline`) plus an accessible, non-blocking banner. Status chrome, not an overlay layer, with an optional consumer-supplied reachability probe and no mutation queue.",
+    questions: [],
     registryDependencies: ["alert"],
   },
   {

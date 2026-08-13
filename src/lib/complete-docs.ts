@@ -3,6 +3,7 @@ import type { DocCodeLanguage } from "@/components/doc-primitives";
 import { errorClassificationDocs } from "@/lib/error-classification-docs";
 import { featureFlagsDocs } from "@/lib/feature-flags-docs";
 import { keyboardShortcutsDocs } from "@/lib/keyboard-shortcuts-docs";
+import { offlineBannerDocs } from "@/lib/offline-banner-docs";
 
 export type DocExample = {
   label: string;
@@ -23,6 +24,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "error-classification": errorClassificationDocs,
   "feature-flags": featureFlagsDocs,
   "keyboard-shortcuts": keyboardShortcutsDocs,
+  "offline-banner": offlineBannerDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {
