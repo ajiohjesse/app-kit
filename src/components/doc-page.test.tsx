@@ -3,7 +3,7 @@ import { DocPageView } from "./doc-page";
 import { docs } from "@/lib/docs";
 import type { CompleteDocSlots } from "@/lib/complete-docs";
 
-const doc = docs[0];
+const doc = docs.find((item) => item.questions.length > 0)!;
 
 const complete: CompleteDocSlots = {
   preview: <div>Live preview</div>,

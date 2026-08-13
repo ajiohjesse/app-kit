@@ -25,14 +25,9 @@ export const docs: DocItem[] = [
     shortTitle: "Modal manager",
     category: "Overlays",
     problem:
-      "Every feature owns its own `isOpen` boolean + portal, causing duplicated stacking/animation logic and making it hard to swap one modal for another mid-flow (e.g. confirm → success modal).",
-    questions: [
-      "Does the stack support more than 2 deep, or is `replaceModal` only meaningful at depth 1?",
-      "How does closing-by-backdrop-click vs. programmatic close differ in cleanup (e.g. should `replaceModal` count as a user dismissal for analytics)?",
-      "Should props be serializable (for potential URL-state sync of “which modal is open”), or can they hold arbitrary closures/handlers?",
-      "Registry shape: is this one registry entry (`modal-manager`) with a dependency on `dialog`, or split into `modal-host` + `use-modal` as separate registry items for finer-grained adoption?",
-    ],
-    registryDependencies: ["dialog"],
+      "A client-only LIFO modal stack with nested Dialog / Alert Dialog primitives, typed overlay settlement, and the Overlay Layer Registry this item owns.",
+    questions: [],
+    registryDependencies: ["dialog", "alert-dialog"],
   },
   {
     number: 2,

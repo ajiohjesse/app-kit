@@ -5,13 +5,22 @@
   "items": [
     {
       "name": "modal-manager",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Global Modal Manager",
-      "description": "Placeholder registry item.",
+      "description": "Client-only LIFO modal stack with nested Dialog / Alert Dialog primitives, typed overlay settlement, and the Overlay Layer Registry.",
       "files": [
-        { "path": "infra/modal-manager.tsx", "type": "registry:component" }
+        {
+          "path": "infra/modal-manager.ts",
+          "type": "registry:lib",
+          "target": "@lib/modal-manager.ts"
+        },
+        {
+          "path": "infra/modal-manager-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/modal-manager-provider.tsx"
+        }
       ],
-      "registryDependencies": ["dialog"]
+      "registryDependencies": ["dialog", "alert-dialog"]
     },
     {
       "name": "confirm-dialog",
