@@ -8,12 +8,14 @@
   color-scheme: light;
   --muted: #efeee9;
   --text-muted: #5f5d57;
-  --text-accent: #44423c;
-  --text-subtle: #77736b;
-  --line: #deddd7;
+  --text-accent: var(--accent);
+  --text-subtle: #68645b;
+  --line: #d6d4cc;
+  --line-strong: #858177;
   --surface: #fbfaf7;
   --surface-2: #efeee9;
-  --accent: #e7e5df;
+  --accent: #2f4bd4;
+  --accent-hover: #1e3fbf;
   --background: #f7f6f2;
   --foreground: #292824;
   --card: #fbfaf7;
@@ -24,17 +26,17 @@
   --primary-foreground: #f7f6f2;
   --secondary: #e9e7e1;
   --secondary-foreground: #44423c;
-  --muted-foreground: oklch(0.556 0 0);
-  --accent-foreground: #44423c;
+  --muted-foreground: #69675f;
+  --accent-foreground: #f7f6f2;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #deddd7;
-  --input: #deddd7;
-  --ring: #8f8b82;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--accent);
+  --chart-1: #2f4bd4;
+  --chart-2: #4359d3;
+  --chart-3: #5a6ed6;
+  --chart-4: #7686d8;
+  --chart-5: #95a1dc;
   --radius: 0.625rem;
   --sidebar: #f2f1ec;
   --sidebar-foreground: #292824;
@@ -42,8 +44,8 @@
   --sidebar-primary-foreground: #f7f6f2;
   --sidebar-accent: #e9e7e1;
   --sidebar-accent-foreground: #44423c;
-  --sidebar-border: #deddd7;
-  --sidebar-ring: #8f8b82;
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ring);
 }
 .dark {
   color-scheme: dark;
@@ -51,12 +53,14 @@
   --foreground: #e9e7e1;
   --muted: #292925;
   --text-muted: #b8b5ac;
-  --text-accent: #d2cfc5;
+  --text-accent: var(--accent);
   --text-subtle: #96928a;
-  --line: #3a3934;
+  --line: #45443e;
+  --line-strong: #77736b;
   --surface: #20201d;
   --surface-2: #292925;
-  --accent: #3a3934;
+  --accent: #8ab4f8;
+  --accent-hover: #aecbfa;
   --card: #23231f;
   --card-foreground: #e9e7e1;
   --popover: #23231f;
@@ -65,25 +69,25 @@
   --primary-foreground: #292824;
   --secondary: #302f2b;
   --secondary-foreground: #d2cfc5;
-  --muted-foreground: oklch(0.708 0 0);
-  --accent-foreground: #e9e7e1;
+  --muted-foreground: #9c9c9c;
+  --accent-foreground: #1f1e1b;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #3a3934;
-  --input: #45443e;
-  --ring: #a29e94;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--accent);
+  --chart-1: #8ab4f8;
+  --chart-2: #9dbff9;
+  --chart-3: #b0cafb;
+  --chart-4: #c2d4fc;
+  --chart-5: #d5defd;
   --sidebar: #1d1d1b;
   --sidebar-foreground: #e9e7e1;
   --sidebar-primary: #d8d5cc;
   --sidebar-primary-foreground: #292824;
   --sidebar-accent: #302f2b;
   --sidebar-accent-foreground: #d2cfc5;
-  --sidebar-border: #3a3934;
-  --sidebar-ring: #a29e94;
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--ring);
 }
 * {
   box-sizing: border-box;
@@ -139,7 +143,7 @@ input:focus-visible {
 .search-panel {
   width: min(560px, calc(100vw - 32px));
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   box-shadow: 0 20px 60px #0003;
   border-radius: 8px;
   overflow: hidden;
@@ -149,7 +153,7 @@ input:focus-visible {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
   color: var(--muted);
 }
 .search-input-row input {
@@ -216,7 +220,7 @@ input:focus-visible {
 }
 .search-trigger,
 .icon-button {
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   background: var(--surface);
   color: inherit;
   border-radius: 6px;
@@ -229,7 +233,7 @@ input:focus-visible {
   cursor: pointer;
 }
 .search-trigger kbd {
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   padding: 2px 5px;
   border-radius: 4px;
   font: 10px var(--font-geist-mono);
@@ -296,7 +300,6 @@ input:focus-visible {
 }
 .nav-number {
   font: 10px var(--font-geist-mono);
-  color: #999;
 }
 .home,
 .doc-page {
@@ -449,7 +452,7 @@ input:focus-visible {
 }
 .doc-breadcrumb span {
   margin: 0 8px;
-  color: var(--line);
+  color: var(--line-strong);
 }
 .doc-title-row {
   display: flex;
@@ -484,7 +487,7 @@ input:focus-visible {
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   background: var(--surface-2);
   padding: 11px 12px;
   margin-bottom: 24px;
