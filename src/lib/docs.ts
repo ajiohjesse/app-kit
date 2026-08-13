@@ -247,10 +247,8 @@ export const docs: DocItem[] = [
     shortTitle: "Keyboard shortcuts",
     category: "Platform",
     problem:
-      "Multiple features attaching their own `keydown` listeners causes shortcut collisions and inconsistent handling of input-field focus.",
-    questions: [
-      "Priority/conflict resolution: what happens when two components register the same combo — last-registered wins, or explicit error?",
-    ],
+      "A client-only shortcut registry that normalizes single-chord shortcuts, tracks registrations in named shortcut scopes, and dispatches with deterministic conflict and priority rules.",
+    questions: [],
   },
   {
     number: 18,

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { DocCodeLanguage } from "@/components/doc-primitives";
 import { errorClassificationDocs } from "@/lib/error-classification-docs";
+import { keyboardShortcutsDocs } from "@/lib/keyboard-shortcuts-docs";
 
 export type DocExample = {
   label: string;
@@ -19,6 +20,7 @@ export type CompleteDocSlots = {
 
 export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "error-classification": errorClassificationDocs,
+  "keyboard-shortcuts": keyboardShortcutsDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {

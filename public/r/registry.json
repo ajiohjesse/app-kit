@@ -176,9 +176,13 @@
       "name": "keyboard-shortcuts",
       "type": "registry:component",
       "title": "Keyboard Shortcut Registry",
-      "description": "Placeholder registry item.",
+      "description": "Client-only shortcut registry with named shortcut scopes, single-chord grammar, effect-based registration, and deterministic conflicts.",
       "files": [
-        { "path": "infra/keyboard-shortcuts.tsx", "type": "registry:component" }
+        {
+          "path": "infra/keyboard-shortcuts.tsx",
+          "type": "registry:component",
+          "target": "@components/keyboard-shortcuts.tsx"
+        }
       ]
     },
     {
