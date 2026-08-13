@@ -485,13 +485,19 @@ input:focus-visible {
 }
 .install {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   border: 1px solid var(--line-strong);
   background: var(--surface-2);
   padding: 11px 12px;
   margin-bottom: 24px;
   font-size: 11px;
+}
+.install-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 .install-label {
   color: var(--accent);
@@ -501,6 +507,15 @@ input:focus-visible {
   overflow: auto;
   color: var(--muted);
   flex: 1;
+}
+.install-once {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.install-once code {
+  color: var(--text-muted);
 }
 .copy-button {
   border: 0;
@@ -536,7 +551,8 @@ input:focus-visible {
   mask-image: linear-gradient(to bottom, black, transparent);
 }
 .preview-label,
-.preview-note {
+.preview-note,
+.preview-body {
   position: relative;
 }
 .preview-label {
@@ -578,6 +594,17 @@ input:focus-visible {
   color: var(--muted);
   margin: 0;
 }
+.code-block .shiki {
+  background: transparent !important;
+}
+.code-block .shiki,
+.code-block .shiki span {
+  color: var(--shiki-light);
+}
+.dark .code-block .shiki,
+.dark .code-block .shiki span {
+  color: var(--shiki-dark);
+}
 .empty-api {
   display: flex;
   flex-direction: column;
@@ -617,6 +644,16 @@ input:focus-visible {
 }
 .questions li::marker {
   color: var(--accent);
+}
+.limitations {
+  padding-left: 18px;
+  margin: 16px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.limitations li {
+  padding: 6px 0 6px 4px;
 }
 
 /* Keep surface tokens independent from the readable text used on top of them. */
@@ -743,11 +780,11 @@ input:focus-visible {
   .doc-title-row {
     flex-direction: column;
   }
-  .install {
+  .install-row {
     align-items: start;
     flex-wrap: wrap;
   }
-  .install code {
+  .install-row code {
     flex-basis: 80%;
     order: 3;
   }
