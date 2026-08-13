@@ -118,18 +118,14 @@ export const docs: DocItem[] = [
   {
     number: 8,
     slug: "authentication-core",
-    title: "Authentication Core (Session + Token Adapter)",
+    title: "Authentication Core",
     shortTitle: "Authentication core",
     category: "Auth & Session",
     problem:
-      "Auth needs to work across two very different runtime contexts — client-only SPA, and Next.js SSR/RSC/middleware — and two different backend models: opaque server-managed sessions (cookie-based) and stateless access/refresh token pairs.",
-    questions: [
-      "Does this wrap a specific library as a hard dependency (Auth.js is the most natural default for the session-cookie strategy on Next.js) or stay library-agnostic with Auth.js as only the reference implementation?",
-      "For the token strategy: is the SPA assumed same-origin with the API or cross-origin, and is a cross-origin cookie-based refresh token acceptable?",
-      "Should #11 (Session Expiry/Silent Refresh) be merged into this item?",
-      "What does `signIn` return/throw on validation vs. network vs. account-locked type errors — does this need to compose with #13’s error classification from day one?",
-    ],
-    dependencies: [],
+      "A session-centric, adapter-first core with AuthUser, Session, and a UX-only session seed so consumers can plug their auth system without a vendor SDK.",
+    questions: [],
+    registryDependencies: ["@app-kit/error-classification"],
+    dependencies: ["server-only"],
   },
   {
     number: 9,

@@ -86,13 +86,31 @@
     },
     {
       "name": "authentication-core",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Authentication Core",
-      "description": "Placeholder registry item.",
+      "description": "Session-centric adapter-first core with AuthUser, Session, UX-only session seed, and a server-only helper. Sign-in failures are ErrorClassification.",
+      "dependencies": ["server-only"],
+      "registryDependencies": ["@app-kit/error-classification"],
       "files": [
         {
-          "path": "infra/authentication-core.tsx",
-          "type": "registry:component"
+          "path": "infra/authentication-core.ts",
+          "type": "registry:lib",
+          "target": "@lib/authentication-core.ts"
+        },
+        {
+          "path": "infra/authentication-core-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/authentication-core-provider.tsx"
+        },
+        {
+          "path": "infra/authentication-core.server.ts",
+          "type": "registry:lib",
+          "target": "@lib/authentication-core.server.ts"
+        },
+        {
+          "path": "infra/authentication-core-env.d.ts",
+          "type": "registry:file",
+          "target": "@lib/authentication-core-env.d.ts"
         }
       ]
     },
