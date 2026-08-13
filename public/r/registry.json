@@ -133,16 +133,16 @@
     },
     {
       "name": "error-classification",
-      "type": "registry:component",
+      "type": "registry:lib",
       "title": "Error Classification",
-      "description": "Placeholder registry item.",
+      "description": "UI-neutral owner of ErrorClassification and classifyError. Maps failures to a stable category, safe message, retryability, and optional redacted details.",
       "files": [
         {
-          "path": "infra/error-classification.tsx",
-          "type": "registry:component"
+          "path": "infra/error-classification.ts",
+          "type": "registry:lib",
+          "target": "@lib/error-classification.ts"
         }
-      ],
-      "registryDependencies": ["alert"]
+      ]
     },
     {
       "name": "draft-autosave",

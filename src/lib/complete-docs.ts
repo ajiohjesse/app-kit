@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { DocCodeLanguage } from "@/components/doc-primitives";
+import { errorClassificationDocs } from "@/lib/error-classification-docs";
 
 export type DocExample = {
   label: string;
@@ -16,7 +17,9 @@ export type CompleteDocSlots = {
   limitations?: string[];
 };
 
-export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {};
+export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
+  "error-classification": errorClassificationDocs,
+};
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {
   return completeDocs[slug];

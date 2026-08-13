@@ -195,16 +195,12 @@ export const docs: DocItem[] = [
   {
     number: 13,
     slug: "error-classification",
-    title: "Global Error Boundary + Typed Error Classification",
+    title: "Error Classification",
     shortTitle: "Error classification",
     category: "Data & Forms",
     problem:
-      "Errors (network, validation, server, auth) all get treated the same, when they should route to different UI treatments.",
-    questions: [
-      "Should classification be based on HTTP status codes only, or also on API-specific error codes/shapes?",
-      "Given the `error.tsx` convention, is the deliverable mostly `classifyError` + a shared fallback UI component?",
-    ],
-    registryDependencies: ["alert"],
+      "Errors (network, validation, server, auth) all get treated the same, when they should route to different UI treatments. This item owns the shared ErrorClassification model and a UI-neutral classifyError helper so every other item can branch on one taxonomy.",
+    questions: [],
   },
   {
     number: 14,

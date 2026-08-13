@@ -617,6 +617,28 @@ input:focus-visible {
 .empty-api .mono {
   color: var(--accent);
 }
+.api-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.api-list dt {
+  color: var(--foreground);
+}
+.api-list dd {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.usage-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--foreground);
+}
 .questions {
   margin-top: 64px;
   border: 1px solid var(--line);
