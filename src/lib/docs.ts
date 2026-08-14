@@ -32,17 +32,16 @@ export const docs: DocItem[] = [
   {
     number: 2,
     slug: "confirm-dialog",
-    title: "Global Confirm Dialog with Built-in Mutation Execution",
+    title: "Global Confirm Dialog",
     shortTitle: "Confirm dialog",
     category: "Overlays",
     problem:
-      "The common `const confirmed = await confirm(...)` pattern still leaves the caller to manually handle loading state, error display, and success behavior after the user confirms. For simple “confirm then mutate” flows, this is repeated boilerplate.",
-    questions: [
-      "Should Mode B’s error state offer “Retry” in-place, or close and let the caller decide (via `onError`)?",
-      "Does this depend on an external toast library, or does it need its own minimal inline success/error UI to stay decoupled?",
-      "How does this compose with #5 (async action wrapper) — is `confirmAndRun` just `confirm()` + the action-runner underneath?",
+      "An Alert Dialog workflow on modal-manager with ErrorClassification errors, so confirm-and-run does not invent a second overlay layer or error model.",
+    questions: [],
+    registryDependencies: [
+      "@app-kit/modal-manager",
+      "@app-kit/error-classification",
     ],
-    registryDependencies: ["alert-dialog"],
   },
   {
     number: 3,

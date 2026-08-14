@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DocCodeLanguage } from "@/components/doc-primitives";
 import { errorClassificationDocs } from "@/lib/error-classification-docs";
 import { authenticationCoreDocs } from "@/lib/authentication-core-docs";
+import { confirmDialogDocs } from "@/lib/confirm-dialog-docs";
 import { featureFlagsDocs } from "@/lib/feature-flags-docs";
 import { keyboardShortcutsDocs } from "@/lib/keyboard-shortcuts-docs";
 import { modalManagerDocs } from "@/lib/modal-manager-docs";
@@ -25,6 +26,7 @@ export type CompleteDocSlots = {
 
 export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "authentication-core": authenticationCoreDocs,
+  "confirm-dialog": confirmDialogDocs,
   "error-classification": errorClassificationDocs,
   "feature-flags": featureFlagsDocs,
   "keyboard-shortcuts": keyboardShortcutsDocs,

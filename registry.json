@@ -26,11 +26,18 @@
       "name": "confirm-dialog",
       "type": "registry:component",
       "title": "Global Confirm Dialog",
-      "description": "Placeholder registry item.",
+      "description": "Modal-manager Alert Dialog workflow for boolean confirm and confirm-and-run, with ErrorClassification errors.",
       "files": [
-        { "path": "infra/confirm-dialog.tsx", "type": "registry:component" }
+        {
+          "path": "infra/confirm-dialog.tsx",
+          "type": "registry:component",
+          "target": "@components/confirm-dialog.tsx"
+        }
       ],
-      "registryDependencies": ["alert-dialog"]
+      "registryDependencies": [
+        "@app-kit/modal-manager",
+        "@app-kit/error-classification"
+      ]
     },
     {
       "name": "alert-prompt-dialog",
