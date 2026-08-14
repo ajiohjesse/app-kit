@@ -6,6 +6,7 @@ import { featureFlagsDocs } from "@/lib/feature-flags-docs";
 import { keyboardShortcutsDocs } from "@/lib/keyboard-shortcuts-docs";
 import { modalManagerDocs } from "@/lib/modal-manager-docs";
 import { offlineBannerDocs } from "@/lib/offline-banner-docs";
+import { loadingOverlayDocs } from "@/lib/loading-overlay-docs";
 
 export type DocExample = {
   label: string;
@@ -27,6 +28,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "error-classification": errorClassificationDocs,
   "feature-flags": featureFlagsDocs,
   "keyboard-shortcuts": keyboardShortcutsDocs,
+  "loading-overlay": loadingOverlayDocs,
   "modal-manager": modalManagerDocs,
   "offline-banner": offlineBannerDocs,
 };

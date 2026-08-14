@@ -49,10 +49,21 @@
       "name": "loading-overlay",
       "type": "registry:component",
       "title": "Global Loading Overlay",
-      "description": "Placeholder registry item.",
+      "description": "Per-token pending/succeeded/failed/released ownership with fail-wins aggregate reduction, named scopes, and optional overlay-layer registration when blocking.",
       "files": [
-        { "path": "infra/loading-overlay.tsx", "type": "registry:component" }
-      ]
+        {
+          "path": "infra/loading-overlay.tsx",
+          "type": "registry:component",
+          "target": "@components/loading-overlay.tsx"
+        }
+      ],
+      "css": {
+        "@media (prefers-reduced-motion: reduce)": {
+          "[data-slot=loading-overlay-spinner]": {
+            "animation": "none"
+          }
+        }
+      }
     },
     {
       "name": "action-runner",

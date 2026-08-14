@@ -65,12 +65,8 @@ export const docs: DocItem[] = [
     shortTitle: "Loading overlay",
     category: "Overlays",
     problem:
-      "Full-page or scoped loading indicators are re-implemented per feature, with inconsistent success/error handling.",
-    questions: [
-      "Should success/error states auto-dismiss, or require explicit `reset()`?",
-      "Does this overlay show progress (percentage) for long operations, or is it strictly indeterminate?",
-    ],
-    registryDependencies: ["alert"],
+      "Per-token pending/succeeded/failed/released ownership with fail-wins aggregate reduction, named scopes, and optional overlay-layer registration when blocking.",
+    questions: [],
   },
   {
     number: 5,

@@ -30,6 +30,7 @@ import type {
   OverlayLayerRegistration,
   OverlaySettlement,
 } from "@/infra/modal-manager";
+import { flushSync } from "react-dom";
 
 const LAYER_RANK: Record<OverlayLayerKind, number> = {
   loading: 3,
@@ -394,7 +395,23 @@ class ModalStackStore {
   }
 }
 
-const OverlayLayerContext = createContext<OverlayLayerRegistry | null>(null);
+const OVERLAY_LAYER_SLOT = Symbol.for("app-kit.overlay-layer-context");
+
+function getOverlayLayerContext() {
+  const holder = globalThis as typeof globalThis & {
+    [OVERLAY_LAYER_SLOT]?: ReturnType<
+      typeof createContext<OverlayLayerRegistry | null>
+    >;
+  };
+  if (!holder[OVERLAY_LAYER_SLOT]) {
+    holder[OVERLAY_LAYER_SLOT] = createContext<OverlayLayerRegistry | null>(
+      null
+    );
+  }
+  return holder[OVERLAY_LAYER_SLOT];
+}
+
+const OverlayLayerContext = getOverlayLayerContext();
 const ModalManagerContext = createContext<{
   api: ModalManagerApi;
   store: ModalStackStore;
@@ -485,10 +502,14 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
           document.activeElement instanceof Element
             ? document.activeElement
             : null;
-        store.setSuspended(true);
+        flushSync(() => {
+          store.setSuspended(true);
+        });
       },
       onResume: () => {
-        store.setSuspended(false);
+        flushSync(() => {
+          store.setSuspended(false);
+        });
       },
     });
   }, [layerId, overlay, store]);
@@ -500,6 +521,17 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
     }
     overlay.clearForeground(layerId);
   }, [layerId, overlay, snapshot.entries.length]);
+
+  const wasSuspended = useRef(false);
+  useEffect(() => {
+    if (wasSuspended.current && !snapshot.suspended) {
+      const target = restoreRef.current;
+      if (target instanceof HTMLElement && document.contains(target)) {
+        target.focus();
+      }
+    }
+    wasSuspended.current = snapshot.suspended;
+  }, [snapshot.suspended]);
 
   useEffect(() => {
     return () => store.teardown();
