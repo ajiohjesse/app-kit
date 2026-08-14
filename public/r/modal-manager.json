@@ -3,7 +3,10 @@
   "name": "modal-manager",
   "title": "Global Modal Manager",
   "description": "Client-only LIFO modal stack with nested Dialog / Alert Dialog primitives, typed overlay settlement, and the Overlay Layer Registry.",
-  "registryDependencies": ["dialog", "alert-dialog"],
+  "registryDependencies": [
+    "dialog",
+    "alert-dialog"
+  ],
   "files": [
     {
       "path": "infra/modal-manager.ts",

@@ -3,7 +3,9 @@
   "name": "offline-banner",
   "title": "Online / Offline Detection Banner",
   "description": "Client-observing connectivity snapshot with an accessible, non-blocking banner. Optional abortable reachability probe; not an overlay layer and no mutation queue.",
-  "registryDependencies": ["alert"],
+  "registryDependencies": [
+    "alert"
+  ],
   "files": [
     {
       "path": "infra/offline-banner.tsx",
