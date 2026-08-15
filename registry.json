@@ -228,11 +228,20 @@
     },
     {
       "name": "draft-autosave",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Draft Autosave",
-      "description": "Placeholder registry item.",
+      "description": "User-namespaced, versioned draft persistence with tab-local sessionStorage by default, debounced saves, revision conflicts on shared stores, and explicit restore/discard.",
       "files": [
-        { "path": "infra/draft-autosave.tsx", "type": "registry:component" }
+        {
+          "path": "infra/draft-autosave.ts",
+          "type": "registry:lib",
+          "target": "@lib/draft-autosave.ts"
+        },
+        {
+          "path": "infra/draft-autosave-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/draft-autosave-provider.tsx"
+        }
       ]
     },
     {

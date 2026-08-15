@@ -14,6 +14,7 @@ import { loadingOverlayDocs } from "@/lib/loading-overlay-docs";
 import { sheetManagerDocs } from "@/lib/sheet-manager-docs";
 import { pendingAuthActionDocs } from "@/lib/pending-auth-action-docs";
 import { sessionRefreshDocs } from "@/lib/session-refresh-docs";
+import { draftAutosaveDocs } from "@/lib/draft-autosave-docs";
 
 export type DocExample = {
   label: string;
@@ -45,6 +46,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "pending-auth-action": pendingAuthActionDocs,
   "session-refresh": sessionRefreshDocs,
   "sheet-manager": sheetManagerDocs,
+  "draft-autosave": draftAutosaveDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {

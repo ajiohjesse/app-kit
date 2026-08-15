@@ -183,10 +183,8 @@ export const docs: DocItem[] = [
     shortTitle: "Draft autosave",
     category: "Data & Forms",
     problem:
-      "Long forms lose data on accidental navigation/refresh; also composable with #9 (“save draft, redirect to login, restore after”).",
-    questions: [
-      "Should this integrate directly with #9’s intent system, or stay fully separate since drafts are restored rather than replayed?",
-    ],
+      "Long forms lose data on accidental navigation/refresh; drafts stay separate from pending-auth-action intents and restore explicitly after auth.",
+    questions: [],
   },
   {
     number: 15,
