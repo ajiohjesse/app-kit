@@ -251,11 +251,9 @@ export const docs: DocItem[] = [
     shortTitle: "Error reporting",
     category: "Platform",
     problem:
-      "Render-time crashes show a blank/broken UI with no path for the user to report what happened, and no automatic capture for the team.",
-    questions: [
-      "Relationship to #13 (typed error classification) — does this boundary only handle render errors, while #13’s classification handles async/mutation errors, with no overlap?",
-    ],
-    registryDependencies: ["dialog", "textarea"],
+      "Adapter-first reporting after classification: redacted ErrorReport delivery through a consumer adapter, opt-in consent, and recovery that never waits on the report. Feedback UI stays consumer-owned.",
+    questions: [],
+    registryDependencies: ["@app-kit/error-classification"],
   },
 ];
 

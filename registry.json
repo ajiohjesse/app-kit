@@ -322,13 +322,22 @@
     },
     {
       "name": "error-reporting",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Error Reporting Boundary",
-      "description": "Placeholder registry item.",
+      "description": "Adapter-first reporting boundary: classify via error-classification, send a redacted ErrorReport, opt-in consent. Recovery does not wait on the report. Feedback UI is consumer-owned.",
       "files": [
-        { "path": "infra/error-reporting.tsx", "type": "registry:component" }
+        {
+          "path": "infra/error-reporting.ts",
+          "type": "registry:lib",
+          "target": "@lib/error-reporting.ts"
+        },
+        {
+          "path": "infra/error-reporting-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/error-reporting-provider.tsx"
+        }
       ],
-      "registryDependencies": ["dialog", "textarea"]
+      "registryDependencies": ["@app-kit/error-classification"]
     }
   ]
 }

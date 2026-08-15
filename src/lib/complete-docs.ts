@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { DocCodeLanguage } from "@/components/doc-primitives";
 import { errorClassificationDocs } from "@/lib/error-classification-docs";
+import { errorReportingDocs } from "@/lib/error-reporting-docs";
 import { authenticationCoreDocs } from "@/lib/authentication-core-docs";
 import { alertPromptDialogDocs } from "@/lib/alert-prompt-dialog-docs";
 import { confirmDialogDocs } from "@/lib/confirm-dialog-docs";
@@ -38,6 +39,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "command-palette": commandPaletteDocs,
   "confirm-dialog": confirmDialogDocs,
   "error-classification": errorClassificationDocs,
+  "error-reporting": errorReportingDocs,
   "feature-flags": featureFlagsDocs,
   "keyboard-shortcuts": keyboardShortcutsDocs,
   "loading-overlay": loadingOverlayDocs,
