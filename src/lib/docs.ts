@@ -121,12 +121,12 @@ export const docs: DocItem[] = [
     shortTitle: "Pending auth action",
     category: "Auth & Session",
     problem:
-      "Already designed in depth in a prior session — included here for completeness and to formalize as part of this infra set.",
-    questions: [
-      "Single-intent slot vs. array of queued intents — worth deciding now given the rest of this list?",
-      "Should replay integrate with #5 (Action Runner) so replay failures get the same toast/error treatment as any other mutation?",
+      "Resume a typed, user-bound action after authentication with a tab-local store and bounded claim/navigate/dispatch — without serializing functions or pulling a data library.",
+    questions: [],
+    registryDependencies: [
+      "@app-kit/authentication-core",
+      "@app-kit/error-classification",
     ],
-    dependencies: ["@tanstack/react-query"],
   },
   {
     number: 10,

@@ -152,16 +152,25 @@
     },
     {
       "name": "pending-auth-action",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Pending Action After Auth",
-      "description": "Placeholder registry item.",
+      "description": "User-bound, versioned pending action intents with a tab-local default store and a bounded resume operation. Mutation replay is opt-in. Not TanStack Query.",
       "files": [
         {
-          "path": "infra/pending-auth-action.tsx",
-          "type": "registry:component"
+          "path": "infra/pending-auth-action.ts",
+          "type": "registry:lib",
+          "target": "@lib/pending-auth-action.ts"
+        },
+        {
+          "path": "infra/pending-auth-action-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/pending-auth-action-provider.tsx"
         }
       ],
-      "dependencies": ["@tanstack/react-query"]
+      "registryDependencies": [
+        "@app-kit/authentication-core",
+        "@app-kit/error-classification"
+      ]
     },
     {
       "name": "auth-guard",
