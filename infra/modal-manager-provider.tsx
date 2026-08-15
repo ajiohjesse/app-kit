@@ -30,7 +30,6 @@ import type {
   OverlayLayerRegistration,
   OverlaySettlement,
 } from "@/infra/modal-manager";
-import { flushSync } from "react-dom";
 
 const LAYER_RANK: Record<OverlayLayerKind, number> = {
   loading: 3,
@@ -221,11 +220,19 @@ class OverlayLayerRegistry {
         continue;
       }
       const rank = LAYER_RANK[layer.kind];
-      if (
-        !winner ||
-        rank > winner.rank ||
-        (rank === winner.rank && generation > winner.generation)
-      ) {
+      if (!winner) {
+        winner = { id, rank, generation };
+        continue;
+      }
+      const winnerIsLoading = winner.rank === LAYER_RANK.loading;
+      const candidateIsLoading = rank === LAYER_RANK.loading;
+      if (candidateIsLoading !== winnerIsLoading) {
+        if (candidateIsLoading) {
+          winner = { id, rank, generation };
+        }
+        continue;
+      }
+      if (generation > winner.generation) {
         winner = { id, rank, generation };
       }
     }
@@ -461,7 +468,9 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
         );
         return { id: "", result: Promise.resolve("dismissed") };
       }
-      return store.open(options);
+      const handle = store.open(options);
+      overlay.setForeground(layerId);
+      return handle;
     },
     replace(id, next) {
       if (!hydrated) {
@@ -470,7 +479,9 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
         );
         return { id: "", result: Promise.resolve("dismissed") };
       }
-      return store.replace(id, next);
+      const handle = store.replace(id, next);
+      overlay.setForeground(layerId);
+      return handle;
     },
     close(id, settlement = "dismissed") {
       if (!hydrated) {
@@ -502,24 +513,18 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
           document.activeElement instanceof Element
             ? document.activeElement
             : null;
-        flushSync(() => {
-          store.setSuspended(true);
-        });
+        store.setSuspended(true);
       },
       onResume: () => {
-        flushSync(() => {
-          store.setSuspended(false);
-        });
+        store.setSuspended(false);
       },
     });
   }, [layerId, overlay, store]);
 
   useEffect(() => {
-    if (snapshot.entries.length > 0) {
-      overlay.setForeground(layerId);
-      return;
+    if (snapshot.entries.length === 0) {
+      overlay.clearForeground(layerId);
     }
-    overlay.clearForeground(layerId);
   }, [layerId, overlay, snapshot.entries.length]);
 
   const wasSuspended = useRef(false);
