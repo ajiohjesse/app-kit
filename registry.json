@@ -246,13 +246,22 @@
     },
     {
       "name": "unsaved-changes",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Unsaved Changes Guard",
-      "description": "Placeholder registry item.",
+      "description": "Consumer-owned dirty-state guard with injected confirm-dialog, one-time navigation retry, and documented Next App Router limits.",
       "files": [
-        { "path": "infra/unsaved-changes.tsx", "type": "registry:component" }
+        {
+          "path": "infra/unsaved-changes.ts",
+          "type": "registry:lib",
+          "target": "@lib/unsaved-changes.ts"
+        },
+        {
+          "path": "infra/unsaved-changes-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/unsaved-changes-provider.tsx"
+        }
       ],
-      "registryDependencies": ["alert-dialog"]
+      "registryDependencies": ["@app-kit/confirm-dialog"]
     },
     {
       "name": "feature-flags",

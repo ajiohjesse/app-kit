@@ -16,6 +16,7 @@ import { sheetManagerDocs } from "@/lib/sheet-manager-docs";
 import { pendingAuthActionDocs } from "@/lib/pending-auth-action-docs";
 import { sessionRefreshDocs } from "@/lib/session-refresh-docs";
 import { draftAutosaveDocs } from "@/lib/draft-autosave-docs";
+import { unsavedChangesDocs } from "@/lib/unsaved-changes-docs";
 
 export type DocExample = {
   label: string;
@@ -49,6 +50,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "session-refresh": sessionRefreshDocs,
   "sheet-manager": sheetManagerDocs,
   "draft-autosave": draftAutosaveDocs,
+  "unsaved-changes": unsavedChangesDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {

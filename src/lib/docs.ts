@@ -193,11 +193,9 @@ export const docs: DocItem[] = [
     shortTitle: "Unsaved changes",
     category: "Data & Forms",
     problem:
-      "Users lose in-progress edits by navigating away or closing the tab without warning.",
-    questions: [
-      "Given the framework gap above, should this ship with a documented limitation (“only reliably blocks `beforeunload` in Next.js; in-app nav blocking is best-effort”), or is a more involved solution in scope?",
-    ],
-    registryDependencies: ["alert-dialog"],
+      "Users lose in-progress edits by navigating away or closing the tab without warning. Dirty state stays consumer-owned; leave confirmation uses injected confirm-dialog with one-shot navigation retry. Next App Router in-app blocking is best-effort.",
+    questions: [],
+    registryDependencies: ["@app-kit/confirm-dialog"],
   },
   {
     number: 16,
