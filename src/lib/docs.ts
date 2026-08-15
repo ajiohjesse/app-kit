@@ -71,13 +71,9 @@ export const docs: DocItem[] = [
     shortTitle: "Action runner",
     category: "Overlays",
     problem:
-      "Every call site that fires a mutation hand-writes try/catch + loading state + toast/error display.",
-    questions: [
-      "Does this become the single canonical way mutations are fired in the app, or an opt-in convenience for simple cases only?",
-      "Concurrency: what happens if `run()` is called again while a previous call on the same scope is still in flight — queue, ignore, or cancel-and-replace?",
-      "Given Next.js’s built-in `useActionState`/`useFormStatus`, does this item risk duplicating framework-provided functionality?",
-    ],
-    dependencies: ["motion"],
+      "Scoped typed async lifecycles with optional confirm and the exact loading-overlay token lifecycle, without prescribing a toast or motion library.",
+    questions: [],
+    registryDependencies: ["@app-kit/error-classification"],
   },
   {
     number: 6,

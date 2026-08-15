@@ -8,6 +8,7 @@ import { featureFlagsDocs } from "@/lib/feature-flags-docs";
 import { keyboardShortcutsDocs } from "@/lib/keyboard-shortcuts-docs";
 import { modalManagerDocs } from "@/lib/modal-manager-docs";
 import { offlineBannerDocs } from "@/lib/offline-banner-docs";
+import { actionRunnerDocs } from "@/lib/action-runner-docs";
 import { loadingOverlayDocs } from "@/lib/loading-overlay-docs";
 
 export type DocExample = {
@@ -26,6 +27,7 @@ export type CompleteDocSlots = {
 };
 
 export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
+  "action-runner": actionRunnerDocs,
   "alert-prompt-dialog": alertPromptDialogDocs,
   "authentication-core": authenticationCoreDocs,
   "confirm-dialog": confirmDialogDocs,

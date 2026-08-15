@@ -77,11 +77,15 @@
       "name": "action-runner",
       "type": "registry:component",
       "title": "Async Action Wrapper",
-      "description": "Placeholder registry item.",
+      "description": "Scoped typed async lifecycles with optional confirm and loading-overlay adapters, ErrorClassification failures, and no motion or toast library.",
       "files": [
-        { "path": "infra/action-runner.tsx", "type": "registry:component" }
+        {
+          "path": "infra/action-runner.tsx",
+          "type": "registry:component",
+          "target": "@components/action-runner.tsx"
+        }
       ],
-      "dependencies": ["motion"]
+      "registryDependencies": ["@app-kit/error-classification"]
     },
     {
       "name": "sheet-manager",

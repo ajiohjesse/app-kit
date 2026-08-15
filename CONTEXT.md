@@ -166,6 +166,10 @@ _Avoid_: Error payload, stack trace
 A pure mapping boundary that converts an unknown failure into an Error Classification and may defer to later mappings when it does not recognize the failure.
 _Avoid_: Error handler, error reporter
 
+**Action runner**:
+A scoped client capability that runs opaque async actions with typed lifecycle state, optional confirm and loading-overlay adapters, and ErrorClassification failures — without prescribing toast, motion, or data libraries.
+_Avoid_: Mutation helper, useActionState wrapper
+
 ### Connectivity
 
 **Connectivity state**:
