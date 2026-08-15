@@ -13,6 +13,7 @@ import { actionRunnerDocs } from "@/lib/action-runner-docs";
 import { loadingOverlayDocs } from "@/lib/loading-overlay-docs";
 import { sheetManagerDocs } from "@/lib/sheet-manager-docs";
 import { pendingAuthActionDocs } from "@/lib/pending-auth-action-docs";
+import { sessionRefreshDocs } from "@/lib/session-refresh-docs";
 
 export type DocExample = {
   label: string;
@@ -42,6 +43,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "modal-manager": modalManagerDocs,
   "offline-banner": offlineBannerDocs,
   "pending-auth-action": pendingAuthActionDocs,
+  "session-refresh": sessionRefreshDocs,
   "sheet-manager": sheetManagerDocs,
 };
 

@@ -148,13 +148,9 @@ export const docs: DocItem[] = [
     shortTitle: "Session refresh",
     category: "Auth & Session",
     problem:
-      "A 401 mid-session currently surfaces as a raw failed request instead of being transparently recovered.",
-    questions: [
-      "Should GET requests be auto-replayed but mutations require explicit user re-confirmation?",
-      "How is this tested/mocked reliably given the timing-sensitive queueing behavior?",
-      "Given the client/server split, is this even a single registry item, or two?",
-      "As raised in #8: should this item just be merged into #8 outright?",
-    ],
+      "Opt-in client refresh coordinator on authentication-core refresh(): single-flight sharing, ReplayPolicy-governed request replay, and 401 recovery without inventing unsupported refresh.",
+    questions: [],
+    registryDependencies: ["@app-kit/authentication-core"],
   },
   {
     number: 12,

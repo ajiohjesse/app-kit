@@ -183,12 +183,22 @@
     },
     {
       "name": "session-refresh",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Session Refresh",
-      "description": "Placeholder registry item.",
+      "description": "Opt-in client refresh coordinator for authentication-core: single-flight refresh, ReplayPolicy request replay, and optional fetch interception. Does not invent unsupported refresh.",
       "files": [
-        { "path": "infra/session-refresh.tsx", "type": "registry:component" }
-      ]
+        {
+          "path": "infra/session-refresh.ts",
+          "type": "registry:lib",
+          "target": "@lib/session-refresh.ts"
+        },
+        {
+          "path": "infra/session-refresh-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/session-refresh-provider.tsx"
+        }
+      ],
+      "registryDependencies": ["@app-kit/authentication-core"]
     },
     {
       "name": "optimistic-mutation",
