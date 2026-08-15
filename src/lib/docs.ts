@@ -236,11 +236,9 @@ export const docs: DocItem[] = [
     shortTitle: "Idle timeout",
     category: "Platform",
     problem:
-      "No generic way to detect user inactivity and log out for compliance-sensitive apps.",
-    questions: [
-      "Should idle tracking pause when the tab is backgrounded (visibility API), or count backgrounded time toward the timeout?",
-    ],
-    registryDependencies: ["alert-dialog"],
+      "Idle and session-expiry warnings via confirm-dialog: Continue extends idle only (never refreshes), Refresh is opt-in, and sign-out propagates across tabs by default.",
+    questions: [],
+    registryDependencies: ["@app-kit/confirm-dialog"],
   },
   {
     number: 20,

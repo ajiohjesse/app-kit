@@ -321,13 +321,22 @@
     },
     {
       "name": "idle-timeout",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Idle / Session Timeout",
-      "description": "Placeholder registry item.",
+      "description": "Client-only idle and session-expiry warnings on confirm-dialog. Continue never refreshes; session Refresh is opt-in; sign-out propagates across tabs by default.",
       "files": [
-        { "path": "infra/idle-timeout.tsx", "type": "registry:component" }
+        {
+          "path": "infra/idle-timeout.ts",
+          "type": "registry:lib",
+          "target": "@lib/idle-timeout.ts"
+        },
+        {
+          "path": "infra/idle-timeout-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/idle-timeout-provider.tsx"
+        }
       ],
-      "registryDependencies": ["alert-dialog"]
+      "registryDependencies": ["@app-kit/confirm-dialog"]
     },
     {
       "name": "error-reporting",

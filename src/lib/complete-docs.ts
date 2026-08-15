@@ -17,6 +17,7 @@ import { pendingAuthActionDocs } from "@/lib/pending-auth-action-docs";
 import { sessionRefreshDocs } from "@/lib/session-refresh-docs";
 import { draftAutosaveDocs } from "@/lib/draft-autosave-docs";
 import { unsavedChangesDocs } from "@/lib/unsaved-changes-docs";
+import { idleTimeoutDocs } from "@/lib/idle-timeout-docs";
 
 export type DocExample = {
   label: string;
@@ -51,6 +52,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "sheet-manager": sheetManagerDocs,
   "draft-autosave": draftAutosaveDocs,
   "unsaved-changes": unsavedChangesDocs,
+  "idle-timeout": idleTimeoutDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {
