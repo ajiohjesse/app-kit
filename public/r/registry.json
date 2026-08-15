@@ -105,11 +105,20 @@
       "name": "command-palette",
       "type": "registry:component",
       "title": "Command Palette",
-      "description": "Placeholder registry item.",
+      "description": "Searchable command surface hosted as a modal-manager dialog containing Command. Destructive commands fail closed without confirm. Embeddable local palettes supported.",
       "files": [
-        { "path": "infra/command-palette.tsx", "type": "registry:component" }
+        {
+          "path": "infra/command-palette.tsx",
+          "type": "registry:component",
+          "target": "@components/command-palette.tsx"
+        }
       ],
-      "registryDependencies": ["command", "dialog"]
+      "registryDependencies": [
+        "@app-kit/modal-manager",
+        "@app-kit/error-classification",
+        "@app-kit/keyboard-shortcuts",
+        "command"
+      ]
     },
     {
       "name": "authentication-core",

@@ -93,12 +93,14 @@ export const docs: DocItem[] = [
     shortTitle: "Command palette",
     category: "Overlays",
     problem:
-      "Power-user navigation/actions are either absent or bolted on late, requiring a registry of everything the app can do.",
-    questions: [
-      "Should commands support async actions (e.g. “navigate after fetching something”), or are they strictly synchronous triggers?",
-      "Permission-awareness: does a command hide itself if the user lacks access, or show disabled with a tooltip?",
+      "Searchable command surface hosted as a modal-manager dialog containing Command — not a second dialog root. Destructive commands fail closed without confirm. Local embeds work without the overlay registry.",
+    questions: [],
+    registryDependencies: [
+      "@app-kit/modal-manager",
+      "@app-kit/error-classification",
+      "@app-kit/keyboard-shortcuts",
+      "command",
     ],
-    registryDependencies: ["command", "dialog"],
   },
   {
     number: 8,
