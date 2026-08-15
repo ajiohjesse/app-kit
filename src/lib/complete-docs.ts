@@ -10,6 +10,7 @@ import { modalManagerDocs } from "@/lib/modal-manager-docs";
 import { offlineBannerDocs } from "@/lib/offline-banner-docs";
 import { actionRunnerDocs } from "@/lib/action-runner-docs";
 import { loadingOverlayDocs } from "@/lib/loading-overlay-docs";
+import { sheetManagerDocs } from "@/lib/sheet-manager-docs";
 
 export type DocExample = {
   label: string;
@@ -37,6 +38,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "loading-overlay": loadingOverlayDocs,
   "modal-manager": modalManagerDocs,
   "offline-banner": offlineBannerDocs,
+  "sheet-manager": sheetManagerDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {

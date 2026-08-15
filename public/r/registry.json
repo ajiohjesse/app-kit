@@ -91,11 +91,15 @@
       "name": "sheet-manager",
       "type": "registry:component",
       "title": "Drawer / Sheet Manager",
-      "description": "Placeholder registry item.",
+      "description": "Client-only LIFO sheet stack separate from modal-manager, with SheetSettlement, side policies, pending dismissal locks, and overlay-layer registration.",
       "files": [
-        { "path": "infra/sheet-manager.tsx", "type": "registry:component" }
+        {
+          "path": "infra/sheet-manager.tsx",
+          "type": "registry:component",
+          "target": "@components/sheet-manager.tsx"
+        }
       ],
-      "registryDependencies": ["sheet"]
+      "registryDependencies": ["@app-kit/modal-manager", "sheet"]
     },
     {
       "name": "command-palette",

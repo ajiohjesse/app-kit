@@ -30,6 +30,7 @@ import type {
   OverlayLayerRegistration,
   OverlaySettlement,
 } from "@/infra/modal-manager";
+import { flushSync } from "react-dom";
 
 const LAYER_RANK: Record<OverlayLayerKind, number> = {
   loading: 3,
@@ -114,9 +115,25 @@ function warnDev(message: string) {
 }
 
 function focusRestoreTarget(target: Element | null) {
-  if (target instanceof HTMLElement && document.contains(target)) {
-    target.focus();
+  if (!(target instanceof HTMLElement) || !document.contains(target)) {
+    return;
   }
+  // Cross-layer resume focuses the buried target after inert clears.
+  if (target.closest("[inert]")) {
+    return;
+  }
+  target.focus();
+}
+
+function focusAfterPaint(target: Element | null) {
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  queueMicrotask(() => {
+    if (document.contains(target) && !target.closest("[inert]")) {
+      target.focus();
+    }
+  });
 }
 
 function unknownModalError(id: string) {
@@ -251,10 +268,7 @@ class OverlayLayerRegistry {
       } else if (!shouldSuspend && isSuspended) {
         this.suspended.delete(id);
         registration.onResume();
-        const target = registration.getRestoreTarget();
-        if (target instanceof HTMLElement && document.contains(target)) {
-          target.focus();
-        }
+        focusAfterPaint(registration.getRestoreTarget());
       }
     }
     this.emit();
@@ -483,23 +497,29 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
       overlay.setForeground(layerId);
       return handle;
     },
-    close(id, settlement = "dismissed") {
+    async close(id, settlement = "dismissed") {
       if (!hydrated) {
         warnDev(
           "useModalManager() operations are no-ops until ModalManagerProvider hydrates."
         );
-        return Promise.resolve();
+        return;
       }
-      return store.close(id, settlement);
+      await store.close(id, settlement);
+      if (store.getSnapshot().entries.length === 0) {
+        overlay.clearForeground(layerId);
+      }
     },
-    closeAll(settlement = "dismissed") {
+    async closeAll(settlement = "dismissed") {
       if (!hydrated) {
         warnDev(
           "useModalManager() operations are no-ops until ModalManagerProvider hydrates."
         );
-        return Promise.resolve();
+        return;
       }
-      return store.closeAll(settlement);
+      await store.closeAll(settlement);
+      if (store.getSnapshot().entries.length === 0) {
+        overlay.clearForeground(layerId);
+      }
     },
   };
 
@@ -513,10 +533,14 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
           document.activeElement instanceof Element
             ? document.activeElement
             : null;
-        store.setSuspended(true);
+        flushSync(() => {
+          store.setSuspended(true);
+        });
       },
       onResume: () => {
-        store.setSuspended(false);
+        flushSync(() => {
+          store.setSuspended(false);
+        });
       },
     });
   }, [layerId, overlay, store]);
@@ -530,10 +554,7 @@ function ModalManagerProviderInner({ children }: { children: ReactNode }) {
   const wasSuspended = useRef(false);
   useEffect(() => {
     if (wasSuspended.current && !snapshot.suspended) {
-      const target = restoreRef.current;
-      if (target instanceof HTMLElement && document.contains(target)) {
-        target.focus();
-      }
+      focusAfterPaint(restoreRef.current);
     }
     wasSuspended.current = snapshot.suspended;
   }, [snapshot.suspended]);

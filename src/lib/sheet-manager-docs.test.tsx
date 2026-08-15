@@ -24,6 +24,7 @@ describe("sheet-manager docs", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("open.tsx")).toBeInTheDocument();
     expect(screen.getByText("replace.tsx")).toBeInTheDocument();
+    expect(screen.getByText("close.tsx")).toBeInTheDocument();
     expect(screen.getByText("nested.tsx")).toBeInTheDocument();
     expect(screen.getByText("compose-modal.tsx")).toBeInTheDocument();
     expect(screen.getByText("useSheetManager()")).toBeInTheDocument();

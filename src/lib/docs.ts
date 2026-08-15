@@ -82,12 +82,9 @@ export const docs: DocItem[] = [
     shortTitle: "Sheet manager",
     category: "Overlays",
     problem:
-      "Slide-in panels have different stacking/animation/dismissal rules than modals (e.g. swipe-to-dismiss on mobile) but are often hacked on top of the modal system.",
-    questions: [
-      "Should Drawer Manager and Modal Manager share a single stack (so a modal opened from a drawer stacks correctly), or stay fully independent?",
-      "Given the overlap with #1, should this and #1 be specified together as one “Overlay Manager” registry item with a `type: dialog | sheet` parameter, rather than two separate items?",
-    ],
-    registryDependencies: ["sheet"],
+      "Client-only LIFO sheet stack, separate from modal-manager, with SheetSettlement, side policies, pending dismissal locks, and overlay-layer registration so a sheet can open over a modal without mutating it.",
+    questions: [],
+    registryDependencies: ["@app-kit/modal-manager", "sheet"],
   },
   {
     number: 7,

@@ -21,6 +21,7 @@ import {
   OverlayLayerProvider,
   useOverlayLayer,
 } from "@/infra/modal-manager-provider";
+import { flushSync } from "react-dom";
 
 export type SheetSettlement = "submitted" | "cancelled" | "dismissed";
 
@@ -119,9 +120,25 @@ function warnDev(message: string) {
 }
 
 function focusRestoreTarget(target: Element | null) {
-  if (target instanceof HTMLElement && document.contains(target)) {
-    target.focus();
+  if (!(target instanceof HTMLElement) || !document.contains(target)) {
+    return;
   }
+  // Cross-layer resume focuses the buried target after inert clears.
+  if (target.closest("[inert]")) {
+    return;
+  }
+  target.focus();
+}
+
+function focusAfterPaint(target: Element | null) {
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  queueMicrotask(() => {
+    if (document.contains(target) && !target.closest("[inert]")) {
+      target.focus();
+    }
+  });
 }
 
 function unknownSheetError(id: string) {
@@ -386,23 +403,29 @@ function SheetManagerProviderInner({ children }: { children: ReactNode }) {
       overlay.setForeground(layerId);
       return handle;
     },
-    close(id, settlement = "dismissed") {
+    async close(id, settlement = "dismissed") {
       if (!hydrated) {
         warnDev(
           "useSheetManager() operations are no-ops until SheetManagerProvider hydrates."
         );
-        return Promise.resolve();
+        return;
       }
-      return store.close(id, settlement);
+      await store.close(id, settlement);
+      if (store.getSnapshot().entries.length === 0) {
+        overlay.clearForeground(layerId);
+      }
     },
-    closeAll(settlement = "dismissed") {
+    async closeAll(settlement = "dismissed") {
       if (!hydrated) {
         warnDev(
           "useSheetManager() operations are no-ops until SheetManagerProvider hydrates."
         );
-        return Promise.resolve();
+        return;
       }
-      return store.closeAll(settlement);
+      await store.closeAll(settlement);
+      if (store.getSnapshot().entries.length === 0) {
+        overlay.clearForeground(layerId);
+      }
     },
     setPending(id, pending) {
       if (!hydrated) {
@@ -425,10 +448,14 @@ function SheetManagerProviderInner({ children }: { children: ReactNode }) {
           document.activeElement instanceof Element
             ? document.activeElement
             : null;
-        store.setSuspended(true);
+        flushSync(() => {
+          store.setSuspended(true);
+        });
       },
       onResume: () => {
-        store.setSuspended(false);
+        flushSync(() => {
+          store.setSuspended(false);
+        });
       },
     });
   }, [layerId, overlay, store]);
@@ -442,10 +469,7 @@ function SheetManagerProviderInner({ children }: { children: ReactNode }) {
   const wasSuspended = useRef(false);
   useEffect(() => {
     if (wasSuspended.current && !snapshot.suspended) {
-      const target = restoreRef.current;
-      if (target instanceof HTMLElement && document.contains(target)) {
-        target.focus();
-      }
+      focusAfterPaint(restoreRef.current);
     }
     wasSuspended.current = snapshot.suspended;
   }, [snapshot.suspended]);

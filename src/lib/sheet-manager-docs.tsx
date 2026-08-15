@@ -89,6 +89,38 @@ export function EditFlow() {
 }
 `;
 
+const closeExample = `"use client";
+
+import { useSheetManager } from "@/components/sheet-manager";
+
+export function CloseFilters() {
+  const sheets = useSheetManager();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const handle = sheets.open({
+          title: "Filters",
+          content: (
+            <button
+              type="button"
+              onClick={() => {
+                void sheets.close(handle.id, "dismissed");
+              }}
+            >
+              Close by id
+            </button>
+          ),
+        });
+      }}
+    >
+      Open filters
+    </button>
+  );
+}
+`;
+
 const nestedExample = `"use client";
 
 import { useSheetManager } from "@/components/sheet-manager";
@@ -273,6 +305,7 @@ export const sheetManagerDocs: CompleteDocSlots = {
   examples: [
     { label: "open.tsx", language: "tsx", code: stackExample },
     { label: "replace.tsx", language: "tsx", code: replaceExample },
+    { label: "close.tsx", language: "tsx", code: closeExample },
     { label: "nested.tsx", language: "tsx", code: nestedExample },
     { label: "compose-modal.tsx", language: "tsx", code: composeExample },
   ],

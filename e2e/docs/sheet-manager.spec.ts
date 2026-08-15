@@ -9,6 +9,7 @@ test("docs page is a complete sheet-manager item", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("open.tsx", { exact: true })).toBeVisible();
   await expect(page.getByText("replace.tsx", { exact: true })).toBeVisible();
+  await expect(page.getByText("close.tsx", { exact: true })).toBeVisible();
   await expect(page.getByText("nested.tsx", { exact: true })).toBeVisible();
   await expect(
     page.getByText("compose-modal.tsx", { exact: true })
@@ -47,6 +48,22 @@ test("sheet over modal: z-order, inertness, escape, and focus restore", async ({
       hasText: "Account",
     })
   ).toHaveCount(1);
+  const zOrder = await page.evaluate(() => {
+    const sheetEl = document.querySelector('[data-slot="sheet-content"]');
+    const modalEl = document.querySelector('[data-slot="dialog-content"]');
+    if (
+      !(sheetEl instanceof HTMLElement) ||
+      !(modalEl instanceof HTMLElement)
+    ) {
+      return null;
+    }
+    return {
+      sheet: Number.parseFloat(getComputedStyle(sheetEl).zIndex) || 0,
+      modal: Number.parseFloat(getComputedStyle(modalEl).zIndex) || 0,
+    };
+  });
+  expect(zOrder).not.toBeNull();
+  expect(zOrder!.sheet).toBeGreaterThanOrEqual(zOrder!.modal);
 
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
