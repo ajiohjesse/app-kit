@@ -159,11 +159,8 @@ export const docs: DocItem[] = [
     shortTitle: "Optimistic mutation",
     category: "Data & Forms",
     problem:
-      "Optimistic update + rollback-on-error is rewritten per-entity on top of React Query.",
-    questions: [
-      "Generic enough to cover list insert/remove/update, or does that need three separate helper variants?",
-      "Should this explicitly declare React Query as a hard dependency (registry `dependencies` field)?",
-    ],
+      "Thin TanStack Query adapter: injected QueryClient, explicit query-key snapshots, atomic optimistic writes, owned rollback, and optional action-runner wiring — not a generic cache adapter.",
+    questions: [],
     dependencies: ["@tanstack/react-query"],
   },
   {

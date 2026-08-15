@@ -204,11 +204,12 @@
       "name": "optimistic-mutation",
       "type": "registry:component",
       "title": "Optimistic Mutation Helper",
-      "description": "Placeholder registry item.",
+      "description": "Thin adapter over an injected TanStack Query QueryClient: explicit query-key snapshots, atomic optimistic writes, owned rollback, conflict policies, and optional action-runner wiring. Not a generic cache adapter.",
       "files": [
         {
           "path": "infra/optimistic-mutation.tsx",
-          "type": "registry:component"
+          "type": "registry:component",
+          "target": "@components/optimistic-mutation.tsx"
         }
       ],
       "dependencies": ["@tanstack/react-query"]

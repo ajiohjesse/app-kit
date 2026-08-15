@@ -116,6 +116,14 @@ _Avoid_: Cache backup
 The restoration of an optimistic mutation's captured cache snapshots after a failed or cancelled mutation attempt.
 _Avoid_: Undo request
 
+**Conflict policy**:
+The per-mutation-key rule for overlapping optimistic attempts: `parallel`, `serial`, or `replace`.
+_Avoid_: Concurrency mode, race strategy
+
+**Missing-data policy**:
+The explicit rule for declared query keys with no usable cached data (`seed`, `skip`, or `reject`), including loading entries without data.
+_Avoid_: Cache default, silent create
+
 **Draft**:
 A versioned, user-namespaced, locally or remotely persisted representation of incomplete consumer-owned input that can be restored without submitting it.
 _Avoid_: Pending mutation, form submission
