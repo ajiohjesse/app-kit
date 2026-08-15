@@ -43,14 +43,15 @@
       "name": "alert-prompt-dialog",
       "type": "registry:component",
       "title": "Global Alert / Prompt Dialog",
-      "description": "Placeholder registry item.",
+      "description": "Promise-based alert on the alert-dialog surface and single-input prompt on the dialog surface, both hosted on modal-manager.",
       "files": [
         {
           "path": "infra/alert-prompt-dialog.tsx",
-          "type": "registry:component"
+          "type": "registry:component",
+          "target": "@components/alert-prompt-dialog.tsx"
         }
       ],
-      "registryDependencies": ["dialog", "input"]
+      "registryDependencies": ["@app-kit/modal-manager", "input"]
     },
     {
       "name": "loading-overlay",

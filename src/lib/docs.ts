@@ -50,12 +50,9 @@ export const docs: DocItem[] = [
     shortTitle: "Alert / prompt",
     category: "Overlays",
     problem:
-      "`window.alert` / `window.prompt` are unstyled and block the JS thread; teams rebuild styled equivalents repeatedly.",
-    questions: [
-      "Is this just a mode of the Modal Manager (#1) with a fixed layout, or a fully separate registry item?",
-      "Do we need multi-field prompts, or strictly single-input?",
-    ],
-    registryDependencies: ["dialog", "input"],
+      "Accessible window.alert / window.prompt replacements: alert on the alert-dialog surface and a single-input prompt on the dialog surface, both hosted on modal-manager.",
+    questions: [],
+    registryDependencies: ["@app-kit/modal-manager", "input"],
   },
   {
     number: 4,
