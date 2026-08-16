@@ -5,6 +5,7 @@ import {
 } from "./authentication-core";
 import {
   classifyError,
+  isAbortError,
   type ErrorClassification,
 } from "./error-classification";
 
@@ -97,18 +98,6 @@ function defaultIsAuthExpired(error: unknown): boolean {
       error !== null &&
       "name" in error &&
       (error as { name?: unknown }).name === "AuthExpiredError")
-  );
-}
-
-function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-  if (signal?.aborted) {
-    return true;
-  }
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    (error as { name?: unknown }).name === "AbortError"
   );
 }
 

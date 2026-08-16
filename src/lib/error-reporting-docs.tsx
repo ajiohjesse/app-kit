@@ -152,7 +152,6 @@ export function SpaRoot({ children }: { children: React.ReactNode }) {
 const errorRecipe = `"use client";
 
 import { useEffect } from "react";
-import { classifyError } from "@/lib/error-classification";
 import { createErrorReporter } from "@/lib/error-reporting";
 
 const reporter = createErrorReporter({
@@ -176,18 +175,15 @@ export default function ErrorPage({
   retry: () => void;
   reset: () => void;
 }) {
-  const classified = classifyError(error);
-
   useEffect(() => {
-    void reporter.report(error, {
-      classification: classified,
-      route: "/segment",
-    });
-  }, [classified, error]);
+    // report() classifies internally; do not call classifyError here.
+    // For classified UI in SPAs, prefer ErrorReportingBoundary fallback.
+    void reporter.report(error, { route: "/segment" });
+  }, [error]);
 
   return (
     <main>
-      <h1>{classified.message}</h1>
+      <h1>Something went wrong. Try again.</h1>
       <button type="button" onClick={() => retry()}>
         Try again
       </button>
@@ -202,7 +198,6 @@ export default function ErrorPage({
 const globalErrorRecipe = `"use client";
 
 import { useEffect } from "react";
-import { classifyError } from "@/lib/error-classification";
 import { createErrorReporter } from "@/lib/error-reporting";
 
 const reporter = createErrorReporter({
@@ -224,16 +219,14 @@ export default function GlobalError({
   error: unknown;
   retry: () => void;
 }) {
-  const classified = classifyError(error);
-
   useEffect(() => {
-    void reporter.report(error, { classification: classified });
-  }, [classified, error]);
+    void reporter.report(error);
+  }, [error]);
 
   return (
     <html lang="en">
       <body>
-        <h1>{classified.message}</h1>
+        <h1>Something went wrong. Try again.</h1>
         <button type="button" onClick={() => retry()}>
           Try again
         </button>
@@ -247,7 +240,7 @@ export const errorReportingDocs: CompleteDocSlots = {
   preview: (
     <div className="usage-sketch">
       <p>
-        <span className="mono">classifyError</span>
+        <span className="mono">ErrorClassification</span>
         {" → "}
         <span className="mono">ErrorReport</span>
         {" → "}
@@ -293,9 +286,10 @@ export const errorReportingDocs: CompleteDocSlots = {
       </dd>
       <dt className="mono">ErrorReportingBoundary</dt>
       <dd>
-        SPA error boundary that classifies, fires <code>report()</code> without
-        awaiting it for recovery, and renders a consumer-owned fallback with{" "}
-        <code>reset()</code>.
+        SPA error boundary that classifies once, fires <code>report()</code>{" "}
+        without awaiting it for recovery, and renders a consumer-owned fallback
+        with the same <code>ErrorClassification</code> plus <code>reset()</code>
+        . Aborts are not reported.
       </dd>
       <dt className="mono">Report consent</dt>
       <dd>

@@ -12,7 +12,6 @@ import {
 } from "react";
 import {
   classifySignInFailure,
-  isAbortError,
   normalizeSignInError,
   sessionIsExpired,
   toSession,
@@ -22,6 +21,7 @@ import {
   type SessionSeed,
   type SignInResult,
 } from "@/infra/authentication-core";
+import { isAbortError } from "@/infra/error-classification";
 
 export class MisconfiguredAuthAdapterError extends Error {
   readonly name = "MisconfiguredAuthAdapterError";

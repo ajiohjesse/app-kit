@@ -167,6 +167,7 @@ export type ErrorReportingBoundaryProps = {
 
 type BoundaryState = {
   error: unknown | null;
+  classification: ErrorClassification | null;
 };
 
 type BoundaryProps = {
@@ -181,41 +182,44 @@ class ErrorReportingBoundaryInner extends Component<
   BoundaryProps,
   BoundaryState
 > {
-  state: BoundaryState = { error: null };
+  state: BoundaryState = { error: null, classification: null };
 
   static getDerivedStateFromError(error: unknown): BoundaryState {
-    return { error };
+    return {
+      error,
+      classification: classifyError(error),
+    };
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
     this.props.onError?.(error, info);
+    const classification = classifyError(
+      error,
+      this.props.reportOptions?.classifyContext
+    );
+    if (classification !== this.state.classification) {
+      this.setState({ classification });
+    }
     const reporter = this.props.reporter;
     if (!reporter) {
       return;
     }
-    // Recovery must not wait on delivery.
+    // Recovery must not wait on delivery. Abort is skipped inside report().
     void reporter.report(error, {
       ...this.props.reportOptions,
-      classification: classifyError(
-        error,
-        this.props.reportOptions?.classifyContext
-      ),
+      classification,
     });
   }
 
   reset = () => {
-    this.setState({ error: null });
+    this.setState({ error: null, classification: null });
   };
 
   render() {
-    if (this.state.error != null) {
-      const classification = classifyError(
-        this.state.error,
-        this.props.reportOptions?.classifyContext
-      );
+    if (this.state.error != null && this.state.classification != null) {
       return this.props.fallback({
         error: this.state.error,
-        classification,
+        classification: this.state.classification,
         reset: this.reset,
       });
     }

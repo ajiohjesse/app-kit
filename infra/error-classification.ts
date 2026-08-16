@@ -255,6 +255,53 @@ function resolvePolicy(redaction: RedactionPolicy = {}): {
   };
 }
 
+/**
+ * Host-only abort detector (DOMException name or aborted signal).
+ * Not an app-facing seam — async-work modules import this; app code should not.
+ */
+export function isAbortError(error: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) {
+    return true;
+  }
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
+}
+
+/**
+ * Host-only abort vs timeout protocol.
+ * When a host aborts due to timeoutMs, pass timedOut: true so timeout wins over cancel.
+ */
+export function resolveAsyncFailureKind(
+  error: unknown,
+  options: { signal?: AbortSignal; timedOut?: boolean } = {}
+): "timeout" | "cancelled" | "failure" {
+  const aborted = isAbortError(error, options.signal);
+  if (aborted && options.timedOut) {
+    return "timeout";
+  }
+  if (aborted) {
+    return "cancelled";
+  }
+  return "failure";
+}
+
+function isErrorClassification(value: unknown): value is ErrorClassification {
+  if (!isPlainObject(value)) {
+    return false;
+  }
+  return (
+    typeof value.category === "string" &&
+    CATEGORIES.has(value.category) &&
+    typeof value.message === "string" &&
+    typeof value.messageKey === "string" &&
+    typeof value.retryable === "boolean"
+  );
+}
+
 function fromClassifierResult(
   result: ErrorClassification,
   redaction?: RedactionPolicy
@@ -291,6 +338,10 @@ export function classifyError(
   error: unknown,
   context: ClassifyErrorContext = {}
 ): ErrorClassification {
+  if (isErrorClassification(error)) {
+    return error;
+  }
+
   if (context.classifiers) {
     try {
       for (const classifier of context.classifiers) {

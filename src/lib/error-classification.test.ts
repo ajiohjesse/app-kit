@@ -1,6 +1,8 @@
 import {
   classifyError,
   createClassifier,
+  isAbortError,
+  resolveAsyncFailureKind,
 } from "../../infra/error-classification";
 
 describe("classifyError", () => {
@@ -16,6 +18,16 @@ describe("classifyError", () => {
     expect(result).not.toMatchObject({
       message: expect.stringContaining("secret-token"),
     });
+  });
+
+  it("treats an ErrorClassification as identity (no double wrap)", () => {
+    const classified = classifyError(new Error("ignored"), { status: 503 });
+    const again = classifyError(classified);
+
+    expect(again).toBe(classified);
+    expect(again.message).toBe(
+      "The service is temporarily unavailable. Try again."
+    );
   });
 
   it.each([
@@ -290,6 +302,29 @@ describe("createClassifier", () => {
     expect(classify(new Error("ignored"), { status: 404 }).category).toBe(
       "not-found"
     );
+  });
+});
+
+describe("isAbortError", () => {
+  it("detects AbortError by name", () => {
+    expect(isAbortError(new DOMException("Aborted", "AbortError"))).toBe(true);
+    expect(isAbortError(new Error("nope"))).toBe(false);
+  });
+
+  it("treats an aborted signal as abort even without an error", () => {
+    const controller = new AbortController();
+    controller.abort();
+    expect(isAbortError(undefined, controller.signal)).toBe(true);
+    expect(isAbortError(new Error("other"), controller.signal)).toBe(true);
+  });
+});
+
+describe("resolveAsyncFailureKind", () => {
+  it("prefers timeout when the host timed out then aborted", () => {
+    const error = new DOMException("Aborted", "AbortError");
+    expect(resolveAsyncFailureKind(error, { timedOut: true })).toBe("timeout");
+    expect(resolveAsyncFailureKind(error)).toBe("cancelled");
+    expect(resolveAsyncFailureKind(new Error("boom"))).toBe("failure");
   });
 });
 

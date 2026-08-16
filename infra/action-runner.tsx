@@ -12,6 +12,7 @@ import {
 } from "react";
 import {
   classifyError,
+  resolveAsyncFailureKind,
   type ErrorClassification,
   type ErrorClassifier,
 } from "@/infra/error-classification";
@@ -166,18 +167,6 @@ const ActionRunnerContext = createContext<{
   api: ActionRunnerApi;
   scope: string;
 } | null>(null);
-
-function isAbortError(error: unknown, signal?: AbortSignal) {
-  if (signal?.aborted) {
-    return true;
-  }
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    (error as { name?: unknown }).name === "AbortError"
-  );
-}
 
 function safeAdapterCall(fn: () => void) {
   try {
@@ -402,10 +391,13 @@ export function ActionRunnerProvider({
 
           return data;
         } catch (raw) {
-          const aborted = isAbortError(raw, controller.signal);
-          if (aborted) {
+          const failureKind = resolveAsyncFailureKind(raw, {
+            signal: controller.signal,
+            timedOut,
+          });
+          if (failureKind === "timeout" || failureKind === "cancelled") {
             const finishedAt = Date.now();
-            if (timedOut) {
+            if (failureKind === "timeout") {
               const classified = classifyError(raw, {
                 timeout: true,
                 aborted: true,

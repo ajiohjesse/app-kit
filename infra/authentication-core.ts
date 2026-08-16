@@ -207,19 +207,5 @@ export function classifySignInFailure(
 export function normalizeSignInError(
   error: ErrorClassification
 ): ErrorClassification {
-  return classifyError(error, {
-    classifiers: [() => error],
-  });
-}
-
-export function isAbortError(error: unknown, signal?: AbortSignal): boolean {
-  if (signal?.aborted) {
-    return true;
-  }
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    (error as { name?: unknown }).name === "AbortError"
-  );
+  return classifyError(error);
 }

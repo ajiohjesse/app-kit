@@ -173,7 +173,7 @@ export const docs: DocItem[] = [
     shortTitle: "Error classification",
     category: "Data & Forms",
     problem:
-      "Errors (network, validation, server, auth) all get treated the same, when they should route to different UI treatments. This item owns the shared ErrorClassification model and a UI-neutral classifyError helper so every other item can branch on one taxonomy.",
+      "Errors (network, validation, server, auth) all get treated the same, when they should route to different UI treatments. This item owns ErrorClassification, Error classifiers, and classifyError. Action runner and other async-work Registry items emit ErrorClassification; app code calls classifyError only when writing a custom Error classifier.",
     questions: [],
   },
   {

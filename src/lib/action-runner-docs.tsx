@@ -124,7 +124,11 @@ export function PublishButton({ id }: { id: string }) {
       >
         Publish
       </button>
-      {state.error ? <p role="alert">{state.error.message}</p> : null}
+      {state.error ? (
+        <p role="alert">
+          {state.error.category}: {state.error.message}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -254,8 +258,10 @@ export const actionRunnerDocs: CompleteDocSlots = {
       <dd>
         Per-scope status: <code>idle</code> | <code>pending</code> |{" "}
         <code>succeeded</code> | <code>failed</code> | <code>cancelled</code>.
-        Failed render metadata is <code>ErrorClassification</code> from{" "}
-        <code>@lib/error-classification</code>. Raw exception text is never in
+        Failed render metadata is <code>ErrorClassification</code> (
+        <code>state.error.category</code>, safe <code>message</code>, etc.).
+        Callers do not import <code>classifyError</code> — Action runner
+        classifies inside <code>run()</code>. Raw exception text is never in
         render state — pass raw errors to <code>onLogError</code>.
       </dd>
     </dl>

@@ -128,7 +128,7 @@ describe("action-runner run lifecycle", () => {
     expect(screen.getByTestId("error-message").textContent).not.toContain(
       "secret database stack trace"
     );
-    expect(screen.getByTestId("error-category")).not.toHaveTextContent("");
+    expect(screen.getByTestId("error-category")).toHaveTextContent("unknown");
   });
 
   it("rethrows the original error to the caller after lifecycle handling", async () => {

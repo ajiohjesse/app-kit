@@ -692,11 +692,7 @@ function PaletteBody({
             }
           } catch (caught) {
             if (caught instanceof CommandDestructiveConfirmRequiredError) {
-              setError(
-                classifyError(caught, {
-                  operation: "command-palette.destructive",
-                })
-              );
+              // Protocol miss: confirm adapter required. Not a classified runtime error.
               return;
             }
             throw caught;

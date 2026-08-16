@@ -160,7 +160,11 @@ export const errorClassificationDocs: CompleteDocSlots = {
         Pure mapper from <code>unknown</code> plus optional HTTP status,
         provider code, abort/timeout/network flags, redaction policy, and
         ordered classifiers. Provider-code classifiers run first, then HTTP,
-        then abort/timeout, then <code>unknown</code>.
+        then abort/timeout, then <code>unknown</code>. Already-classified values
+        are returned as-is (identity). Write custom Error classifiers here;
+        Action runner, confirm-dialog, command palette, Auth guard, Session
+        refresh, Authentication Core, and the Reporting boundary emit{" "}
+        <code>ErrorClassification</code> so app code rarely calls this.
       </dd>
       <dt className="mono">createClassifier(classifiers)</dt>
       <dd>

@@ -1,5 +1,6 @@
 import {
   classifyError,
+  isAbortError,
   type ClassifyErrorContext,
   type ErrorClassification,
   type RedactionPolicy,
@@ -356,6 +357,10 @@ export function createErrorReporter(
     reportOptions: ReportOptions = {}
   ): Promise<ErrorReport | null> {
     if (disposed || current.enabled !== true) {
+      return null;
+    }
+
+    if (isAbortError(error, reportOptions.signal)) {
       return null;
     }
 

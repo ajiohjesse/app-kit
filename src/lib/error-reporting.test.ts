@@ -183,4 +183,24 @@ describe("createErrorReporter", () => {
       email: "a@example.com",
     });
   });
+
+  it("does not submit an Error report for abort or cancelled signals", async () => {
+    const { adapter, payloads } = createRecordingAdapter();
+    const reporter = createErrorReporter({
+      adapter,
+      enabled: true,
+    });
+
+    await expect(
+      reporter.report(new DOMException("Aborted", "AbortError"))
+    ).resolves.toBeNull();
+
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      reporter.report(new Error("ignored"), { signal: controller.signal })
+    ).resolves.toBeNull();
+
+    expect(payloads).toHaveLength(0);
+  });
 });
