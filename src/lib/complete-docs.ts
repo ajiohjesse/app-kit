@@ -19,6 +19,7 @@ import { draftAutosaveDocs } from "@/lib/draft-autosave-docs";
 import { unsavedChangesDocs } from "@/lib/unsaved-changes-docs";
 import { idleTimeoutDocs } from "@/lib/idle-timeout-docs";
 import { optimisticMutationDocs } from "@/lib/optimistic-mutation-docs";
+import { authGuardDocs } from "@/lib/auth-guard-docs";
 
 export type DocExample = {
   label: string;
@@ -55,6 +56,7 @@ export const completeDocs: Partial<Record<string, CompleteDocSlots>> = {
   "unsaved-changes": unsavedChangesDocs,
   "idle-timeout": idleTimeoutDocs,
   "optimistic-mutation": optimisticMutationDocs,
+  "auth-guard": authGuardDocs,
 };
 
 export function getCompleteDoc(slug: string): CompleteDocSlots | undefined {

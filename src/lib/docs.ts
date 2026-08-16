@@ -135,10 +135,11 @@ export const docs: DocItem[] = [
     shortTitle: "Auth guard",
     category: "Auth & Session",
     problem:
-      "`if (!isAuthenticated) { ...redirect... }` is hand-written at every call site that needs auth.",
-    questions: [
-      "Does `withAuth` need to know whether the wrapped function is “resumable” as a mutation intent, or is that the caller’s responsibility?",
-      "Should there be a variant that shows an inline “sign in to continue” prompt instead of a hard redirect?",
+      "Protected routes and guarded actions with an explicit unauthenticated policy (redirect-without-resume, redirect-and-resume, or inline). Resume fails closed without pending-auth-action; session seed is UX-only.",
+    questions: [],
+    registryDependencies: [
+      "@app-kit/authentication-core",
+      "@app-kit/error-classification",
     ],
   },
   {

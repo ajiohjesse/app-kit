@@ -174,11 +174,24 @@
     },
     {
       "name": "auth-guard",
-      "type": "registry:component",
+      "type": "registry:item",
       "title": "Auth Guard",
-      "description": "Placeholder registry item.",
+      "description": "Protected routes and guarded actions with explicit unauthenticated policies: redirect-without-resume, redirect-and-resume, or inline. Resume fails closed without pending-auth-action. Session seed is UX-only.",
       "files": [
-        { "path": "infra/auth-guard.tsx", "type": "registry:component" }
+        {
+          "path": "infra/auth-guard.ts",
+          "type": "registry:lib",
+          "target": "@lib/auth-guard.ts"
+        },
+        {
+          "path": "infra/auth-guard-boundary.tsx",
+          "type": "registry:component",
+          "target": "@components/auth-guard-boundary.tsx"
+        }
+      ],
+      "registryDependencies": [
+        "@app-kit/authentication-core",
+        "@app-kit/error-classification"
       ]
     },
     {
