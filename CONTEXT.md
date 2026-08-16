@@ -175,7 +175,7 @@ A pure mapping boundary that converts an unknown failure into an Error Classific
 _Avoid_: Error handler, error reporter
 
 **Action runner**:
-A scoped client capability that runs opaque async actions with typed lifecycle state, optional confirm and loading-overlay adapters, and ErrorClassification failures — without prescribing toast, motion, or data libraries.
+A scoped client capability that runs opaque async actions with typed lifecycle state, optional confirm and blocking loading adapters, and ErrorClassification failures — without prescribing toast, motion, or data libraries.
 _Avoid_: Mutation helper, useActionState wrapper
 
 ### Connectivity

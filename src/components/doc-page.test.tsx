@@ -1,9 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { DocPageView } from "./doc-page";
-import { docs } from "@/lib/docs";
+import { docs, type DocItem } from "@/lib/docs";
 import type { CompleteDocSlots } from "@/lib/complete-docs";
 
-const doc = docs.find((item) => item.questions.length > 0)!;
+const doc: DocItem = {
+  ...docs[0]!,
+  questions: ["Should this remain a placeholder until implemented?"],
+};
 
 const complete: CompleteDocSlots = {
   preview: <div>Live preview</div>,

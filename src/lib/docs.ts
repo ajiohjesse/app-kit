@@ -36,10 +36,11 @@ export const docs: DocItem[] = [
     shortTitle: "Confirm dialog",
     category: "Overlays",
     problem:
-      "An Alert Dialog workflow on modal-manager with ErrorClassification errors, so confirm-and-run does not invent a second overlay layer or error model.",
+      "Alert Dialog confirm UI on modal-manager; confirmAndRun delegates to Action runner so abort, timeout, and classification stay in one lifecycle.",
     questions: [],
     registryDependencies: [
       "@app-kit/modal-manager",
+      "@app-kit/action-runner",
       "@app-kit/error-classification",
     ],
   },
@@ -71,7 +72,7 @@ export const docs: DocItem[] = [
     shortTitle: "Action runner",
     category: "Overlays",
     problem:
-      "Scoped typed async lifecycles with optional confirm and the exact loading-overlay token lifecycle, without prescribing a toast or motion library.",
+      "Scoped typed async lifecycles with optional confirm and blocking loading adapters, without prescribing a toast or motion library.",
     questions: [],
     registryDependencies: ["@app-kit/error-classification"],
   },

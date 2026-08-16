@@ -1,18 +1,27 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { OverlaySettlement } from "../../infra/modal-manager";
 import {
   ModalManager,
   ModalManagerProvider,
 } from "../../infra/modal-manager-provider";
-import { useConfirmDialog } from "../../infra/confirm-dialog";
+import {
+  ActionRunnerProvider,
+  useActionRunner,
+} from "../../infra/action-runner";
+import {
+  ConfirmDialogProvider,
+  useConfirmDialog,
+} from "../../infra/confirm-dialog";
 import type { ErrorClassification } from "../../infra/error-classification";
 
 function Host({ children }: { children?: ReactNode }) {
   return (
     <ModalManagerProvider>
       <ModalManager />
-      {children}
+      <ConfirmDialogProvider>
+        <ActionRunnerProvider>{children}</ActionRunnerProvider>
+      </ConfirmDialogProvider>
     </ModalManagerProvider>
   );
 }
@@ -79,8 +88,8 @@ describe("confirm() settlement", () => {
   });
 });
 
-describe("confirmAndRun() classified errors", () => {
-  it("keeps the dialog open, shows ErrorClassification, and never renders raw exception text", async () => {
+describe("confirmAndRun() via Action runner", () => {
+  it("returns classified error after confirm and closes the dialog", async () => {
     const SECRET = "RAW_EXCEPTION_SECRET_xyz";
     const logs: unknown[] = [];
     const errors: ErrorClassification[] = [];
@@ -88,24 +97,80 @@ describe("confirmAndRun() classified errors", () => {
 
     function Capture() {
       const { confirmAndRun } = useConfirmDialog();
-      const attempts = useRef(0);
+      const { state } = useActionRunner();
+      return (
+        <>
+          <span data-testid="runner-status">{state.status}</span>
+          <span data-testid="runner-error">{state.error?.message ?? ""}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void confirmAndRun({
+                title: "Save draft?",
+                onLogError: (error) => {
+                  logs.push(error);
+                },
+                onError: (error) => {
+                  errors.push(error);
+                },
+                onConfirm: async () => {
+                  throw new Error(SECRET);
+                },
+              }).then((value) => {
+                result = value;
+              });
+            }}
+          >
+            run
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <Host>
+        <Capture />
+      </Host>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: "Confirm" }).click();
+    });
+
+    await waitFor(() => {
+      expect(result).toMatchObject({
+        status: "error",
+        error: {
+          category: "unknown",
+          message: "Something went wrong. Try again.",
+        },
+      });
+      expect(screen.getByTestId("runner-status")).toHaveTextContent("failed");
+    });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+    expect(errors).toHaveLength(1);
+    expect(logs).toEqual([expect.any(Error)]);
+    expect((logs[0] as Error).message).toBe(SECRET);
+  });
+
+  it("returns cancelled when confirm is dismissed", async () => {
+    let result: unknown;
+    let invoked = false;
+
+    function Capture() {
+      const { confirmAndRun } = useConfirmDialog();
       return (
         <button
           type="button"
           onClick={() => {
             void confirmAndRun({
               title: "Save draft?",
-              onLogError: (error) => {
-                logs.push(error);
-              },
-              onError: (error) => {
-                errors.push(error);
-              },
               onConfirm: async () => {
-                attempts.current += 1;
-                if (attempts.current === 1) {
-                  throw new Error(SECRET);
-                }
+                invoked = true;
                 return "saved";
               },
             }).then((value) => {
@@ -128,91 +193,18 @@ describe("confirmAndRun() classified errors", () => {
       screen.getByRole("button", { name: "run" }).click();
     });
     await act(async () => {
-      screen.getByRole("button", { name: "Confirm" }).click();
-    });
-
-    expect(
-      screen.getByRole("alertdialog", { name: "Save draft?" })
-    ).toBeVisible();
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "Something went wrong. Try again."
-      );
-    });
-    expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
-    expect(errors).toHaveLength(1);
-    expect(errors[0]?.category).toBe("unknown");
-    expect(errors[0]?.message).toBe("Something went wrong. Try again.");
-    expect(logs).toEqual([expect.any(Error)]);
-    expect((logs[0] as Error).message).toBe(SECRET);
-
-    await act(async () => {
-      screen.getByRole("button", { name: "Retry" }).click();
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    });
-    expect(result).toEqual({ status: "confirmed", data: "saved" });
-  });
-
-  it("returns classified error status when the user cancels after a failed attempt", async () => {
-    let result: unknown;
-
-    function Capture() {
-      const { confirmAndRun } = useConfirmDialog();
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            void confirmAndRun({
-              title: "Save draft?",
-              onLogError: () => {},
-              onConfirm: async () => {
-                throw new Error("RAW_EXCEPTION_SECRET_xyz");
-              },
-            }).then((value) => {
-              result = value;
-            });
-          }}
-        >
-          run
-        </button>
-      );
-    }
-
-    render(
-      <Host>
-        <Capture />
-      </Host>
-    );
-
-    await act(async () => {
-      screen.getByRole("button", { name: "run" }).click();
-    });
-    await act(async () => {
-      screen.getByRole("button", { name: "Confirm" }).click();
-    });
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    await act(async () => {
       screen.getByRole("button", { name: "Cancel" }).click();
     });
+
     await waitFor(() => {
-      expect(result).toMatchObject({
-        status: "error",
-        error: {
-          category: "unknown",
-          message: "Something went wrong. Try again.",
-        },
-      });
+      expect(result).toEqual({ status: "cancelled" });
     });
+    expect(invoked).toBe(false);
   });
 
-  it("disables cancel while pending and skips onConfirm when validation fails", async () => {
-    let release!: () => void;
+  it("skips onConfirm when validation fails before confirm", async () => {
     const calls: string[] = [];
+    let result: unknown;
     const validation: ErrorClassification = {
       category: "validation",
       message: "Name is required.",
@@ -224,41 +216,26 @@ describe("confirmAndRun() classified errors", () => {
     function Capture() {
       const { confirmAndRun } = useConfirmDialog();
       return (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              void confirmAndRun({
-                title: "Rename?",
-                onValidate: () => {
-                  calls.push("validate");
-                  return { error: validation };
-                },
-                onConfirm: async () => {
-                  calls.push("confirm");
-                  return "done";
-                },
-              });
-            }}
-          >
-            validate
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void confirmAndRun({
-                title: "Export?",
-                onConfirm: () =>
-                  new Promise((resolve) => {
-                    calls.push("pending");
-                    release = () => resolve("ok");
-                  }),
-              });
-            }}
-          >
-            hang
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={() => {
+            void confirmAndRun({
+              title: "Rename?",
+              onValidate: () => {
+                calls.push("validate");
+                return { error: validation };
+              },
+              onConfirm: async () => {
+                calls.push("confirm");
+                return "done";
+              },
+            }).then((value) => {
+              result = value;
+            });
+          }}
+        >
+          validate
+        </button>
       );
     }
 
@@ -271,34 +248,11 @@ describe("confirmAndRun() classified errors", () => {
     await act(async () => {
       screen.getByRole("button", { name: "validate" }).click();
     });
-    await act(async () => {
-      screen.getByRole("button", { name: "Confirm" }).click();
-    });
+
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("Name is required.");
+      expect(result).toEqual({ status: "error", error: validation });
     });
-    expect(screen.getByText("name: Required")).toBeInTheDocument();
     expect(calls).toEqual(["validate"]);
-
-    await act(async () => {
-      screen.getByRole("button", { name: "Cancel" }).click();
-    });
-
-    await act(async () => {
-      screen.getByRole("button", { name: "hang" }).click();
-    });
-    await act(async () => {
-      screen.getByRole("button", { name: "Confirm" }).click();
-    });
-    await waitFor(() => {
-      expect(screen.getByText("Working")).toBeInTheDocument();
-    });
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
-    await act(async () => {
-      release();
-    });
-    await waitFor(() => {
-      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 });

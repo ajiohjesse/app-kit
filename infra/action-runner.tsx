@@ -71,10 +71,15 @@ export type ActionRunnerClock = {
   clearTimeout: (id: number) => void;
 };
 
-export type ActionRunOptions = {
-  confirm?: ActionConfirmOptions;
+export type ActionBlockingOptions = {
   label?: string;
   progress?: number;
+};
+
+export type ActionRunOptions = {
+  confirm?: ActionConfirmOptions;
+  /** Opt into loading-overlay chrome. `true` or `{ label, progress }`. */
+  blocking?: boolean | ActionBlockingOptions;
   metadata?: Record<string, unknown>;
   timeoutMs?: number;
   classifiers?: readonly ErrorClassifier[];
@@ -116,6 +121,39 @@ type AttemptRecord = {
 
 const IDLE_STATE: ActionRunnerState = { status: "idle" };
 
+const ACTION_LOADING_ADAPTER_SLOT = Symbol.for(
+  "app-kit.action-loading-adapter"
+);
+const ACTION_CONFIRM_ADAPTER_SLOT = Symbol.for(
+  "app-kit.action-confirm-adapter"
+);
+
+function getActionLoadingAdapterContext() {
+  const holder = globalThis as typeof globalThis & {
+    [ACTION_LOADING_ADAPTER_SLOT]?: ReturnType<
+      typeof createContext<ActionLoadingOverlayAdapter | null>
+    >;
+  };
+  if (!holder[ACTION_LOADING_ADAPTER_SLOT]) {
+    holder[ACTION_LOADING_ADAPTER_SLOT] =
+      createContext<ActionLoadingOverlayAdapter | null>(null);
+  }
+  return holder[ACTION_LOADING_ADAPTER_SLOT];
+}
+
+function getActionConfirmAdapterContext() {
+  const holder = globalThis as typeof globalThis & {
+    [ACTION_CONFIRM_ADAPTER_SLOT]?: ReturnType<
+      typeof createContext<ActionConfirmAdapter | null>
+    >;
+  };
+  if (!holder[ACTION_CONFIRM_ADAPTER_SLOT]) {
+    holder[ACTION_CONFIRM_ADAPTER_SLOT] =
+      createContext<ActionConfirmAdapter | null>(null);
+  }
+  return holder[ACTION_CONFIRM_ADAPTER_SLOT];
+}
+
 const defaultClock: ActionRunnerClock = {
   setTimeout: (callback, delay = 0) =>
     globalThis.setTimeout(callback, delay) as unknown as number,
@@ -153,6 +191,18 @@ function createAbortError() {
   return Object.assign(new Error("Aborted"), { name: "AbortError" });
 }
 
+function blockingBeginOptions(
+  blocking: boolean | ActionBlockingOptions | undefined
+): ActionBlockingOptions | undefined {
+  if (blocking == null || blocking === false) {
+    return undefined;
+  }
+  if (blocking === true) {
+    return {};
+  }
+  return blocking;
+}
+
 function settleCancelled(
   setState: (state: ActionRunnerState) => void,
   options: ActionRunOptions,
@@ -176,6 +226,11 @@ export function ActionRunnerProvider({
   classifiers,
   clock = defaultClock,
 }: ActionRunnerProviderProps) {
+  const defaultLoading = useContext(getActionLoadingAdapterContext());
+  const defaultConfirm = useContext(getActionConfirmAdapterContext());
+  const resolvedLoading = loadingOverlay ?? defaultLoading ?? undefined;
+  const resolvedConfirm = confirm ?? defaultConfirm ?? undefined;
+
   const [state, setState] = useState<ActionRunnerState>(IDLE_STATE);
 
   const attemptSeq = useRef(0);
@@ -183,18 +238,18 @@ export function ActionRunnerProvider({
   const serialQueue = useRef(Promise.resolve());
   const inFlightCount = useRef(0);
   const lastAttempt = useRef<AttemptRecord | null>(null);
-  const overlayRef = useRef(loadingOverlay);
-  const confirmRef = useRef(confirm);
+  const overlayRef = useRef(resolvedLoading);
+  const confirmRef = useRef(resolvedConfirm);
   const classifiersRef = useRef(classifiers);
   const clockRef = useRef(clock);
 
   useEffect(() => {
-    overlayRef.current = loadingOverlay;
-  }, [loadingOverlay]);
+    overlayRef.current = resolvedLoading;
+  }, [resolvedLoading]);
 
   useEffect(() => {
-    confirmRef.current = confirm;
-  }, [confirm]);
+    confirmRef.current = resolvedConfirm;
+  }, [resolvedConfirm]);
 
   useEffect(() => {
     classifiersRef.current = classifiers;
@@ -222,6 +277,10 @@ export function ActionRunnerProvider({
       let timeoutId: number | undefined;
 
       try {
+        // Count before confirm so ignore/replace apply while a prompt is open.
+        inFlightCount.current += 1;
+        counted = true;
+
         if (options.confirm) {
           if (!confirmAdapter) {
             throw new Error(
@@ -242,8 +301,6 @@ export function ActionRunnerProvider({
 
         attemptSeq.current += 1;
         const attemptId = `${scope}-${attemptSeq.current}`;
-        inFlightCount.current += 1;
-        counted = true;
 
         let timedOut = false;
         if (options.timeoutMs != null && options.timeoutMs > 0) {
@@ -268,17 +325,53 @@ export function ActionRunnerProvider({
           metadata: options.metadata,
         });
 
+        const beginOptions = blockingBeginOptions(options.blocking);
         let token: string | undefined;
-        if (overlay) {
-          token = overlay.begin({
-            label: options.label,
-            progress: options.progress,
-          });
+        if (beginOptions) {
+          if (!overlay) {
+            throw new Error(
+              "run({ blocking }) requires an ActionRunnerProvider loadingOverlay adapter."
+            );
+          }
+          token = overlay.begin(beginOptions);
         }
 
         let terminalHandled = false;
         const markTerminalHandled = () => {
           terminalHandled = true;
+        };
+        const succeedThenRelease = () => {
+          if (token == null || !overlay || terminalHandled) {
+            return;
+          }
+          safeAdapterCall(() => {
+            overlay.succeed(token!);
+          });
+          safeAdapterCall(() => {
+            overlay.release(token!);
+          });
+          markTerminalHandled();
+        };
+        const failThenRelease = (message: string) => {
+          if (token == null || !overlay || terminalHandled) {
+            return;
+          }
+          safeAdapterCall(() => {
+            overlay.fail(token!, { message });
+          });
+          safeAdapterCall(() => {
+            overlay.release(token!);
+          });
+          markTerminalHandled();
+        };
+        const releaseOnly = () => {
+          if (token == null || !overlay || terminalHandled) {
+            return;
+          }
+          safeAdapterCall(() => {
+            overlay.release(token!);
+          });
+          markTerminalHandled();
         };
 
         try {
@@ -290,12 +383,7 @@ export function ActionRunnerProvider({
           });
 
           // Action already completed: prefer success over a late abort.
-          if (token != null && overlay) {
-            safeAdapterCall(() => {
-              overlay.succeed(token!);
-            });
-            markTerminalHandled();
-          }
+          succeedThenRelease();
 
           const finishedAt = Date.now();
           setState({
@@ -323,12 +411,7 @@ export function ActionRunnerProvider({
                 aborted: true,
                 classifiers: options.classifiers ?? classifiersRef.current,
               });
-              if (token != null && overlay && !terminalHandled) {
-                safeAdapterCall(() => {
-                  overlay.fail(token!, { message: classified.message });
-                });
-                markTerminalHandled();
-              }
+              failThenRelease(classified.message);
               setState({
                 status: "failed",
                 attemptId,
@@ -342,12 +425,7 @@ export function ActionRunnerProvider({
               throw raw;
             }
 
-            if (token != null && overlay && !terminalHandled) {
-              safeAdapterCall(() => {
-                overlay.release(token!);
-              });
-              markTerminalHandled();
-            }
+            releaseOnly();
 
             settleCancelled(setState, options, {
               attemptId,
@@ -362,12 +440,7 @@ export function ActionRunnerProvider({
             classifiers: options.classifiers ?? classifiersRef.current,
           });
 
-          if (token != null && overlay && !terminalHandled) {
-            safeAdapterCall(() => {
-              overlay.fail(token!, { message: classified.message });
-            });
-            markTerminalHandled();
-          }
+          failThenRelease(classified.message);
 
           const finishedAt = Date.now();
           setState({
@@ -475,4 +548,9 @@ export function useActionRunner(options?: { scope?: string }): ActionRunnerApi {
     );
   }
   return context.api;
+}
+
+/** Soft lookup for hosts that work with or without Action runner. */
+export function useOptionalActionRunner(): ActionRunnerApi | null {
+  return useContext(ActionRunnerContext)?.api ?? null;
 }

@@ -5,11 +5,13 @@ import {
   ActionRunnerProvider,
   useActionRunner,
 } from "../../../infra/action-runner";
-import { useConfirmDialog } from "../../../infra/confirm-dialog";
+import {
+  ConfirmDialogProvider,
+  useConfirmDialog,
+} from "../../../infra/confirm-dialog";
 import {
   LoadingOverlay,
   LoadingOverlayProvider,
-  useLoadingOverlay,
 } from "../../../infra/loading-overlay";
 import {
   ModalManager,
@@ -26,13 +28,13 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function OverlayWiredBody() {
+function CompositionBody() {
   const { run, state } = useActionRunner();
   const [gate] = useState(() => deferred());
 
   return (
     <div>
-      <h2>overlay</h2>
+      <h2>confirm + blocking</h2>
       <p data-testid="runner-status">{state.status}</p>
       {state.error ? (
         <p role="alert" data-testid="runner-error">
@@ -47,11 +49,17 @@ function OverlayWiredBody() {
               await gate.promise;
               return "ok";
             },
-            { label: "Working" }
-          );
+            {
+              confirm: {
+                title: "Start work?",
+                confirmLabel: "Start",
+              },
+              blocking: { label: "Working" },
+            }
+          ).catch(() => undefined);
         }}
       >
-        Start pending
+        Confirm then block
       </button>
       <button
         type="button"
@@ -64,66 +72,40 @@ function OverlayWiredBody() {
       <button
         type="button"
         onClick={() => {
-          void run(async () => {
-            throw new Error("secret failure detail");
-          }).catch(() => undefined);
+          void run(
+            async () => {
+              throw new Error("secret failure detail");
+            },
+            {
+              confirm: { title: "Fail after confirm?" },
+              blocking: true,
+            }
+          ).catch(() => undefined);
         }}
       >
-        Start failing
+        Confirm then fail
       </button>
       <LoadingOverlay />
     </div>
   );
 }
 
-function OverlayWired() {
-  const overlay = useLoadingOverlay();
-  return (
-    <ActionRunnerProvider
-      loadingOverlay={{
-        begin: overlay.begin,
-        update: overlay.update,
-        succeed: overlay.succeed,
-        fail: overlay.fail,
-        release: overlay.release,
-      }}
-    >
-      <OverlayWiredBody />
-    </ActionRunnerProvider>
-  );
-}
-
-function ConfirmWiredBody() {
-  const { run, state } = useActionRunner();
+function ConfirmOnlyBody() {
+  const { confirm } = useConfirmDialog();
+  const [last, setLast] = useState("idle");
   return (
     <div>
-      <h2>confirm</h2>
-      <p data-testid="confirm-runner-status">{state.status}</p>
+      <h2>confirm only</h2>
+      <p data-testid="confirm-only-status">{last}</p>
       <button
         type="button"
         onClick={() => {
-          void run(async () => "deleted", {
-            confirm: {
-              title: "Delete item?",
-              description: "This cannot be undone.",
-              confirmLabel: "Delete",
-              destructive: true,
-            },
-          }).catch(() => undefined);
+          void confirm({ title: "Leave?" }).then((value) => setLast(value));
         }}
       >
-        Delete with confirm
+        Ask confirm
       </button>
     </div>
-  );
-}
-
-function ConfirmWired() {
-  const { confirm } = useConfirmDialog();
-  return (
-    <ActionRunnerProvider confirm={{ confirm }}>
-      <ConfirmWiredBody />
-    </ActionRunnerProvider>
   );
 }
 
@@ -131,17 +113,21 @@ export default function ActionRunnerSmokePage() {
   return (
     <main>
       <h1>action-runner smoke</h1>
-      <LoadingOverlayProvider
-        scope="smoke"
-        blocking={false}
-        successDurationMs={2000}
-        errorDurationMs={2000}
-      >
-        <OverlayWired />
-      </LoadingOverlayProvider>
       <ModalManagerProvider>
         <ModalManager />
-        <ConfirmWired />
+        <ConfirmDialogProvider>
+          <LoadingOverlayProvider
+            scope="smoke"
+            blocking={false}
+            successDurationMs={2000}
+            errorDurationMs={2000}
+          >
+            <ActionRunnerProvider>
+              <CompositionBody />
+              <ConfirmOnlyBody />
+            </ActionRunnerProvider>
+          </LoadingOverlayProvider>
+        </ConfirmDialogProvider>
       </ModalManagerProvider>
     </main>
   );

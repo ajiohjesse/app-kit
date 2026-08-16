@@ -37,86 +37,31 @@ export function App() {
 async function saveDraft(_input: { signal: AbortSignal }) {}
 `;
 
-const overlayExample = `"use client";
+const confirmBlockingExample = `"use client";
 
 import {
   ActionRunnerProvider,
   useActionRunner,
 } from "@/components/action-runner";
+import {
+  ConfirmDialogProvider,
+} from "@/components/confirm-dialog";
 import {
   LoadingOverlay,
   LoadingOverlayProvider,
-  useLoadingOverlay,
 } from "@/components/loading-overlay";
-
-function SaveButton() {
-  const { run } = useActionRunner();
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        void run(
-          async () => {
-            await save();
-          },
-          { label: "Saving" }
-        );
-      }}
-    >
-      Save
-    </button>
-  );
-}
-
-function AppBody() {
-  const overlay = useLoadingOverlay();
-
-  return (
-    <ActionRunnerProvider
-      loadingOverlay={{
-        begin: overlay.begin,
-        update: overlay.update,
-        succeed: overlay.succeed,
-        fail: overlay.fail,
-        release: overlay.release,
-      }}
-    >
-      <LoadingOverlay />
-      <SaveButton />
-    </ActionRunnerProvider>
-  );
-}
-
-export function App() {
-  return (
-    <LoadingOverlayProvider>
-      <AppBody />
-    </LoadingOverlayProvider>
-  );
-}
-
-async function save() {}
-`;
-
-const confirmExample = `"use client";
-
-import {
-  ActionRunnerProvider,
-  useActionRunner,
-} from "@/components/action-runner";
-import { useConfirmDialog } from "@/components/confirm-dialog";
 import {
   ModalManager,
   ModalManagerProvider,
 } from "@/components/modal-manager-provider";
 
 function DeleteButton({ id }: { id: string }) {
-  const { run } = useActionRunner();
+  const { run, state } = useActionRunner();
 
   return (
     <button
       type="button"
+      disabled={state.status === "pending"}
       onClick={() => {
         void run(
           async () => {
@@ -129,6 +74,7 @@ function DeleteButton({ id }: { id: string }) {
               confirmLabel: "Delete",
               destructive: true,
             },
+            blocking: { label: "Deleting" },
           }
         ).catch(() => undefined);
       }}
@@ -138,21 +84,18 @@ function DeleteButton({ id }: { id: string }) {
   );
 }
 
-function AppBody({ id }: { id: string }) {
-  const { confirm } = useConfirmDialog();
-
-  return (
-    <ActionRunnerProvider confirm={{ confirm }}>
-      <DeleteButton id={id} />
-    </ActionRunnerProvider>
-  );
-}
-
-export function App() {
+export function App({ id }: { id: string }) {
   return (
     <ModalManagerProvider>
       <ModalManager />
-      <AppBody id="file-1" />
+      <ConfirmDialogProvider>
+        <LoadingOverlayProvider>
+          <ActionRunnerProvider>
+            <LoadingOverlay />
+            <DeleteButton id={id} />
+          </ActionRunnerProvider>
+        </LoadingOverlayProvider>
+      </ConfirmDialogProvider>
     </ModalManagerProvider>
   );
 }
@@ -253,8 +196,11 @@ export const actionRunnerDocs: CompleteDocSlots = {
   preview: <ActionRunnerPreview />,
   examples: [
     { label: "basic-run.tsx", language: "tsx", code: basicExample },
-    { label: "overlay.tsx", language: "tsx", code: overlayExample },
-    { label: "confirm.tsx", language: "tsx", code: confirmExample },
+    {
+      label: "confirm-blocking.tsx",
+      language: "tsx",
+      code: confirmBlockingExample,
+    },
     {
       label: "server-action.tsx",
       language: "tsx",
@@ -272,27 +218,37 @@ export const actionRunnerDocs: CompleteDocSlots = {
       <dd>
         Client-only named scope for typed async lifecycles. Default concurrency
         is serial. Optional <code>loadingOverlay</code> and <code>confirm</code>{" "}
-        adapters are injected — this item does not take a registry dependency on
-        those hosts. Nested providers are independent scopes.
+        props override adapters. When confirm-dialog&apos;s{" "}
+        <code>ConfirmDialogProvider</code> and loading-overlay&apos;s{" "}
+        <code>LoadingOverlayProvider</code> are ancestors, defaults bind
+        automatically. Nested providers are independent scopes.
       </dd>
       <dt className="mono">useActionRunner()</dt>
       <dd>
         Returns <code>run</code>, <code>cancel</code>, <code>retry</code>,{" "}
         <code>state</code>, and <code>scope</code>. Pass{" "}
         <code>{`{ scope }`}</code> to assert the named provider; a mismatch
-        throws. Compatible with confirm-dialog&apos;s optional{" "}
-        <code>actionRunner.run</code> injection.
+        throws.
       </dd>
       <dt className="mono">run(action, options?)</dt>
       <dd>
         Runs an async function with a runtime context (<code>signal</code>,{" "}
         <code>scope</code>, <code>attemptId</code>, optional{" "}
-        <code>metadata</code>). Lifecycle: optional confirm → overlay{" "}
-        <code>begin</code> → invoke → <code>succeed</code> / <code>fail</code> /{" "}
-        <code>release</code> on cancel → exactly-once cleanup. Errors are
-        rethrown after lifecycle handling. Optional <code>timeoutMs</code>,{" "}
-        <code>concurrency</code>, and <code>onDuplicate</code> (
-        <code>allow</code> | <code>ignore</code> | <code>replace</code>).
+        <code>metadata</code>). Lifecycle: optional confirm → optional blocking
+        overlay <code>begin</code> → invoke → <code>succeed</code>/
+        <code>fail</code> then <code>release</code>, or <code>release</code> on
+        cancel. Errors are rethrown after lifecycle handling. Optional{" "}
+        <code>timeoutMs</code>, <code>concurrency</code>, and{" "}
+        <code>onDuplicate</code> (<code>allow</code> | <code>ignore</code> |{" "}
+        <code>replace</code>).
+      </dd>
+      <dt className="mono">options.confirm / options.blocking</dt>
+      <dd>
+        <code>confirm</code> waits for Overlay settlement <code>confirmed</code>{" "}
+        before invoke. <code>blocking</code> is <code>true</code> or{" "}
+        <code>{`{ label, progress }`}</code> and owns the loading-overlay token.
+        Using either without a bound adapter fails closed with a development
+        error.
       </dd>
       <dt className="mono">state</dt>
       <dd>
@@ -302,25 +258,12 @@ export const actionRunnerDocs: CompleteDocSlots = {
         <code>@lib/error-classification</code>. Raw exception text is never in
         render state — pass raw errors to <code>onLogError</code>.
       </dd>
-      <dt className="mono">Overlay token lifecycle</dt>
-      <dd>
-        When a loading-overlay adapter is injected: <code>begin</code> before
-        invoke; <code>succeed</code> on success; <code>fail</code> on failure;{" "}
-        <code>release</code> only on cancel before a terminal presentation.{" "}
-        <code>finally</code> does not call those again. Adapter failures do not
-        hide the action outcome.
-      </dd>
-      <dt className="mono">Confirm</dt>
-      <dd>
-        Optional via injected confirm-dialog. Dismissal or cancel prevents
-        invocation and marks the attempt <code>cancelled</code>.
-      </dd>
     </dl>
   ),
   limitations: [
     "Client-only. Server Components may place ActionRunnerProvider but must not call run().",
     "No motion or toast library. Wire onSuccess / onError / onCancelled / onLogError to your notifier.",
-    "loading-overlay and confirm-dialog are optional injected adapters, not registry dependencies.",
+    "confirm-dialog and loading-overlay are optional: install their providers as ancestors and adapters bind; omit them and plain run() still works.",
     "Server Actions are supported only as opaque async functions. No direct Next.js import; closures are not assumed serializable.",
     "Manual-copy fallback: copy infra/action-runner.tsx to src/components/action-runner.tsx. Install @app-kit/error-classification first.",
   ],

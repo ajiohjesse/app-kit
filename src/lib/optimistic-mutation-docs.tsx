@@ -151,7 +151,7 @@ export function SaveWithRunner() {
     queryKeys: [["todo", 1]],
     runAction: (operation) =>
       run((context) => operation({ signal: context.signal }), {
-        label: "Saving",
+        blocking: { label: "Saving" },
       }),
     mutationFn: async (variables: { title: string }) =>
       updateTodo(variables.title),

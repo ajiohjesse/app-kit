@@ -8,8 +8,9 @@ test("docs page is a complete action-runner item", async ({ page }) => {
     page.getByText("bunx shadcn@latest add @app-kit/action-runner")
   ).toBeVisible();
   await expect(page.getByText("basic-run.tsx", { exact: true })).toBeVisible();
-  await expect(page.getByText("overlay.tsx", { exact: true })).toBeVisible();
-  await expect(page.getByText("confirm.tsx", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("confirm-blocking.tsx", { exact: true })
+  ).toBeVisible();
   await expect(
     page.getByText("server-action.tsx", { exact: true })
   ).toBeVisible();
@@ -21,14 +22,19 @@ test("docs page is a complete action-runner item", async ({ page }) => {
   ).toHaveCount(0);
 });
 
-test("overlay-wired pending and error are visible", async ({ page }) => {
+test("confirm then blocking success and fail", async ({ page }) => {
   await page.goto("/action-runner-smoke");
 
   await expect(
     page.getByRole("heading", { name: "action-runner smoke" })
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Start pending" }).click();
+  await page.getByRole("button", { name: "Confirm then block" }).click();
+  await expect(
+    page.getByRole("alertdialog", { name: "Start work?" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Start" }).click();
+
   const overlay = page.locator(
     "[data-loading-overlay-scope=smoke] [data-slot=loading-overlay]"
   );
@@ -39,9 +45,11 @@ test("overlay-wired pending and error are visible", async ({ page }) => {
   await page.getByRole("button", { name: "Resolve pending" }).click();
   await expect(page.getByTestId("runner-status")).toHaveText("succeeded");
 
-  await page.getByRole("button", { name: "Start failing" }).click();
-  await expect(overlay).toBeVisible();
-  await expect(overlay).toHaveAttribute("data-status", "error");
+  await page.getByRole("button", { name: "Confirm then fail" }).click();
+  await expect(
+    page.getByRole("alertdialog", { name: "Fail after confirm?" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Confirm" }).click();
   await expect(page.getByTestId("runner-status")).toHaveText("failed");
   await expect(page.getByTestId("runner-error")).toBeVisible();
   await expect(page.getByTestId("runner-error")).not.toContainText(
@@ -49,16 +57,14 @@ test("overlay-wired pending and error are visible", async ({ page }) => {
   );
 });
 
-test("confirm dismissal prevents invocation", async ({ page }) => {
+test("confirm cancel skips the action", async ({ page }) => {
   await page.goto("/action-runner-smoke");
 
-  await page.getByRole("button", { name: "Delete with confirm" }).click();
+  await page.getByRole("button", { name: "Confirm then block" }).click();
   await expect(
-    page.getByRole("alertdialog", { name: "Delete item?" })
+    page.getByRole("alertdialog", { name: "Start work?" })
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByTestId("confirm-runner-status")).toHaveText(
-    "cancelled"
-  );
+  await expect(page.getByTestId("runner-status")).toHaveText("cancelled");
 });

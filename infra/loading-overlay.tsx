@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -19,6 +20,34 @@ const DEFAULT_SUCCESS_LABEL = "Done";
 const DEFAULT_ERROR_LABEL = "Something went wrong";
 const DEFAULT_SUCCESS_DURATION_MS = 0;
 const DEFAULT_ERROR_DURATION_MS = 800;
+
+const ACTION_LOADING_ADAPTER_SLOT = Symbol.for(
+  "app-kit.action-loading-adapter"
+);
+
+type ActionLoadingOverlayAdapter = {
+  begin: (options?: { label?: string; progress?: number }) => string;
+  update?: (
+    token: string,
+    patch: { label?: string; progress?: number }
+  ) => void;
+  succeed: (token: string, metadata?: { message?: string }) => void;
+  fail: (token: string, metadata?: { message?: string }) => void;
+  release: (token: string) => void;
+};
+
+function getActionLoadingAdapterContext() {
+  const holder = globalThis as typeof globalThis & {
+    [ACTION_LOADING_ADAPTER_SLOT]?: ReturnType<
+      typeof createContext<ActionLoadingOverlayAdapter | null>
+    >;
+  };
+  if (!holder[ACTION_LOADING_ADAPTER_SLOT]) {
+    holder[ACTION_LOADING_ADAPTER_SLOT] =
+      createContext<ActionLoadingOverlayAdapter | null>(null);
+  }
+  return holder[ACTION_LOADING_ADAPTER_SLOT];
+}
 
 export type LoadingOverlayToken = string;
 
@@ -422,19 +451,41 @@ export function LoadingOverlayProvider({
   const inertChildren = blocking && visible;
   const [host, setHost] = useState<HTMLDivElement | null>(null);
 
+  const ActionLoadingAdapterContext = getActionLoadingAdapterContext();
+  const actionLoadingAdapter = useMemo<ActionLoadingOverlayAdapter>(
+    () => ({
+      begin: (options) => store.begin(options),
+      update: (token, patch) => {
+        store.update(token, patch);
+      },
+      succeed: (token, metadata) => {
+        store.succeed(token, metadata);
+      },
+      fail: (token, metadata) => {
+        store.fail(token, metadata);
+      },
+      release: (token) => {
+        store.release(token);
+      },
+    }),
+    [store]
+  );
+
   return (
-    <LoadingOverlayContext.Provider value={{ store, scope, blocking, host }}>
-      <div
-        ref={setHost}
-        data-loading-overlay-scope={scope}
-        className={
-          scope === DEFAULT_LOADING_OVERLAY_SCOPE ? undefined : "relative"
-        }
-        aria-busy={snapshot.status === "loading" ? true : undefined}
-      >
-        <div inert={inertChildren ? true : undefined}>{children}</div>
-      </div>
-    </LoadingOverlayContext.Provider>
+    <ActionLoadingAdapterContext.Provider value={actionLoadingAdapter}>
+      <LoadingOverlayContext.Provider value={{ store, scope, blocking, host }}>
+        <div
+          ref={setHost}
+          data-loading-overlay-scope={scope}
+          className={
+            scope === DEFAULT_LOADING_OVERLAY_SCOPE ? undefined : "relative"
+          }
+          aria-busy={snapshot.status === "loading" ? true : undefined}
+        >
+          <div inert={inertChildren ? true : undefined}>{children}</div>
+        </div>
+      </LoadingOverlayContext.Provider>
+    </ActionLoadingAdapterContext.Provider>
   );
 }
 

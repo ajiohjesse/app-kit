@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useConfirmDialog } from "../../infra/confirm-dialog";
+import { ActionRunnerProvider } from "../../infra/action-runner";
+import {
+  ConfirmDialogProvider,
+  useConfirmDialog,
+} from "../../infra/confirm-dialog";
 import {
   ModalManager,
   ModalManagerProvider,
@@ -62,7 +66,11 @@ export function ConfirmDialogPreview() {
   return (
     <ModalManagerProvider>
       <ModalManager />
-      <PreviewBody />
+      <ConfirmDialogProvider>
+        <ActionRunnerProvider>
+          <PreviewBody />
+        </ActionRunnerProvider>
+      </ConfirmDialogProvider>
     </ModalManagerProvider>
   );
 }

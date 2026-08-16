@@ -23,12 +23,11 @@ describe("action-runner docs", () => {
       screen.getByText("bunx shadcn@latest add @app-kit/action-runner")
     ).toBeInTheDocument();
     expect(screen.getByText("basic-run.tsx")).toBeInTheDocument();
-    expect(screen.getByText("overlay.tsx")).toBeInTheDocument();
-    expect(screen.getByText("confirm.tsx")).toBeInTheDocument();
+    expect(screen.getByText("confirm-blocking.tsx")).toBeInTheDocument();
     expect(screen.getByText("server-action.tsx")).toBeInTheDocument();
     expect(screen.getByText("useActionRunner()")).toBeInTheDocument();
     expect(
-      screen.getByText(/loading-overlay and confirm-dialog are optional/)
+      screen.getByText(/confirm-dialog and loading-overlay are optional/)
     ).toBeInTheDocument();
     expect(
       complete?.examples.every((example) => !example.code.includes("@/infra/"))

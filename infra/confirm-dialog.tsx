@@ -1,24 +1,47 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
 import { AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import type { ErrorClassification } from "@/infra/error-classification";
 import {
-  classifyError,
-  type ErrorClassification,
-  type ErrorClassifier,
-} from "@/infra/error-classification";
+  useOptionalActionRunner,
+  type ActionConfirmAdapter,
+  type ActionRunOptions,
+} from "@/infra/action-runner";
 import type { OverlaySettlement } from "@/infra/modal-manager";
 import {
   useModalManager,
   type ModalContentContext,
+  type ModalManagerApi,
 } from "@/infra/modal-manager-provider";
 
 const DEFAULT_CONFIRM_LABEL = "Confirm";
 const DEFAULT_CANCEL_LABEL = "Cancel";
-const RETRY_LABEL = "Retry";
-const PENDING_LABEL = "Working";
 const DESTRUCTIVE_HINT = "This action is destructive.";
+
+const ACTION_CONFIRM_ADAPTER_SLOT = Symbol.for(
+  "app-kit.action-confirm-adapter"
+);
+
+function getActionConfirmAdapterContext() {
+  const holder = globalThis as typeof globalThis & {
+    [ACTION_CONFIRM_ADAPTER_SLOT]?: ReturnType<
+      typeof createContext<ActionConfirmAdapter | null>
+    >;
+  };
+  if (!holder[ACTION_CONFIRM_ADAPTER_SLOT]) {
+    holder[ACTION_CONFIRM_ADAPTER_SLOT] =
+      createContext<ActionConfirmAdapter | null>(null);
+  }
+  return holder[ACTION_CONFIRM_ADAPTER_SLOT];
+}
 
 export type ConfirmOptions = {
   title: ReactNode;
@@ -30,21 +53,14 @@ export type ConfirmOptions = {
 
 export type ConfirmValidateResult = void | { error: ErrorClassification };
 
-export type ConfirmActionRunner = {
-  run: <T>(
-    action: (input: { signal: AbortSignal }) => Promise<T>
-  ) => Promise<T>;
-};
-
 export type ConfirmAndRunOptions<T> = ConfirmOptions & {
   onConfirm: (input: { signal: AbortSignal }) => Promise<T>;
   onValidate?: () => ConfirmValidateResult | Promise<ConfirmValidateResult>;
   onSuccess?: (data: T) => void | Promise<void>;
   onError?: (error: ErrorClassification) => void;
   onLogError?: (error: unknown) => void;
-  abortable?: boolean;
-  classifiers?: readonly ErrorClassifier[];
-  actionRunner?: ConfirmActionRunner;
+  classifiers?: ActionRunOptions["classifiers"];
+  blocking?: ActionRunOptions["blocking"];
 };
 
 export type ConfirmAndRunResult<T> =
@@ -60,17 +76,9 @@ export type ConfirmDialogApi = {
   ) => Promise<ConfirmAndRunResult<T>>;
 };
 
-function isAbortError(error: unknown, signal?: AbortSignal) {
-  if (signal?.aborted) {
-    return true;
-  }
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    (error as { name?: unknown }).name === "AbortError"
-  );
-}
+const ConfirmFnContext = createContext<ConfirmDialogApi["confirm"] | null>(
+  null
+);
 
 function confirmDescription(options: ConfirmOptions): ReactNode {
   if (!options.description && !options.destructive) {
@@ -88,50 +96,23 @@ function confirmDescription(options: ConfirmOptions): ReactNode {
 
 function ConfirmButtons({
   options,
-  pending,
-  error,
   confirmLabel,
   onConfirm,
   onCancel,
 }: {
-  options: ConfirmOptions & { abortable?: boolean };
-  pending?: boolean;
-  error?: ErrorClassification | null;
+  options: ConfirmOptions;
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const cancelDisabled = pending && !options.abortable;
   return (
     <AlertDialogFooter>
-      <div aria-live="polite" aria-atomic="true">
-        {pending ? PENDING_LABEL : null}
-      </div>
-      {error ? (
-        <div role="alert">
-          <p>{error.message}</p>
-          {error.fieldErrors
-            ? Object.entries(error.fieldErrors).map(([field, message]) => (
-                <p key={field}>
-                  {field}: {message}
-                </p>
-              ))
-            : null}
-        </div>
-      ) : null}
-      <Button
-        type="button"
-        variant="outline"
-        disabled={cancelDisabled}
-        onClick={onCancel}
-      >
+      <Button type="button" variant="outline" onClick={onCancel}>
         {options.cancelLabel ?? DEFAULT_CANCEL_LABEL}
       </Button>
       <Button
         type="button"
         variant={options.destructive ? "destructive" : "default"}
-        disabled={pending}
-        aria-busy={pending || undefined}
         onClick={onConfirm}
       >
         {confirmLabel}
@@ -157,154 +138,108 @@ function ConfirmBooleanBody({
   );
 }
 
-function ConfirmRunBody<T>({
-  options,
-  confirm,
-  cancel,
-  onOutcome,
-}: {
-  options: ConfirmAndRunOptions<T>;
-  onOutcome: (result: ConfirmAndRunResult<T>) => void;
-} & Pick<ModalContentContext, "confirm" | "cancel">) {
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<ErrorClassification | null>(null);
-  const inFlight = useRef(false);
-  const abortRef = useRef<AbortController | null>(null);
+function createConfirm(modals: ModalManagerApi): ConfirmDialogApi["confirm"] {
+  return (options: ConfirmOptions) => {
+    return modals.open({
+      surface: "alert-dialog",
+      title: options.title,
+      description: confirmDescription(options),
+      closeOnBackdrop: false,
+      content: (context) => (
+        <ConfirmBooleanBody
+          options={options}
+          confirm={context.confirm}
+          cancel={context.cancel}
+        />
+      ),
+    }).result;
+  };
+}
 
-  async function runAttempt() {
-    if (inFlight.current) {
-      return;
-    }
-    inFlight.current = true;
-    setPending(true);
-    setError(null);
-    const controller = new AbortController();
-    abortRef.current = controller;
-    try {
-      const invalid = await options.onValidate?.();
-      if (invalid?.error) {
-        setError(invalid.error);
-        return;
-      }
-      const data = options.actionRunner
-        ? await options.actionRunner.run(() =>
-            options.onConfirm({ signal: controller.signal })
-          )
-        : await options.onConfirm({ signal: controller.signal });
-      if (controller.signal.aborted) {
-        onOutcome({ status: "cancelled" });
-        cancel();
-        return;
-      }
-      onOutcome({ status: "confirmed", data });
-      confirm();
-      try {
-        await options.onSuccess?.(data);
-      } catch (raw) {
-        options.onLogError?.(raw);
-      }
-    } catch (raw) {
-      if (isAbortError(raw, controller.signal)) {
-        onOutcome({ status: "cancelled" });
-        cancel();
-        return;
-      }
-      options.onLogError?.(raw);
-      const classified = classifyError(raw, {
-        classifiers: options.classifiers,
-      });
-      setError(classified);
-      options.onError?.(classified);
-    } finally {
-      inFlight.current = false;
-      abortRef.current = null;
-      setPending(false);
-    }
-  }
-
-  function onCancel() {
-    if (pending) {
-      if (!options.abortable) {
-        return;
-      }
-      abortRef.current?.abort();
-      return;
-    }
-    onOutcome(error ? { status: "error", error } : { status: "cancelled" });
-    cancel();
-  }
+export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
+  const modals = useModalManager();
+  const confirm = useMemo(() => createConfirm(modals), [modals]);
+  const ActionConfirmAdapterContext = getActionConfirmAdapterContext();
+  const adapter = useMemo<ActionConfirmAdapter>(() => ({ confirm }), [confirm]);
 
   return (
-    <ConfirmButtons
-      options={options}
-      pending={pending}
-      error={error}
-      confirmLabel={
-        error ? RETRY_LABEL : (options.confirmLabel ?? DEFAULT_CONFIRM_LABEL)
-      }
-      onConfirm={() => {
-        void runAttempt();
-      }}
-      onCancel={onCancel}
-    />
+    <ConfirmFnContext.Provider value={confirm}>
+      <ActionConfirmAdapterContext.Provider value={adapter}>
+        {children}
+      </ActionConfirmAdapterContext.Provider>
+    </ConfirmFnContext.Provider>
   );
 }
 
 export function useConfirmDialog(): ConfirmDialogApi {
   const modals = useModalManager();
+  const providedConfirm = useContext(ConfirmFnContext);
+  const runner = useOptionalActionRunner();
 
-  const confirm = useCallback(
-    (options: ConfirmOptions) => {
-      return modals.open({
-        surface: "alert-dialog",
-        title: options.title,
-        description: confirmDescription(options),
-        closeOnBackdrop: false,
-        content: (context) => (
-          <ConfirmBooleanBody
-            options={options}
-            confirm={context.confirm}
-            cancel={context.cancel}
-          />
-        ),
-      }).result;
-    },
-    [modals]
+  const confirm = useMemo(
+    () => providedConfirm ?? createConfirm(modals),
+    [providedConfirm, modals]
   );
 
   const confirmAndRun = useCallback(
     async <T,>(
       options: ConfirmAndRunOptions<T>
     ): Promise<ConfirmAndRunResult<T>> => {
-      let outcome: ConfirmAndRunResult<T> | undefined;
-      const handle = modals.open({
-        surface: "alert-dialog",
-        title: options.title,
-        description: confirmDescription(options),
-        closeOnEscape: false,
-        closeOnBackdrop: false,
-        content: (context) => (
-          <ConfirmRunBody
-            options={options}
-            confirm={context.confirm}
-            cancel={context.cancel}
-            onOutcome={(result) => {
-              outcome = result;
-            }}
-          />
-        ),
-      });
-      const settlement = await handle.result;
-      if (outcome) {
-        return outcome;
+      if (!runner) {
+        throw new Error(
+          "confirmAndRun() requires an ActionRunnerProvider ancestor."
+        );
       }
-      if (settlement === "cancelled") {
+
+      const invalid = await options.onValidate?.();
+      if (invalid?.error) {
+        return { status: "error", error: invalid.error };
+      }
+
+      let classified: ErrorClassification | undefined;
+      let cancelled = false;
+
+      try {
+        const data = await runner.run(
+          (context) => options.onConfirm({ signal: context.signal }),
+          {
+            confirm: {
+              title: options.title,
+              description: options.description,
+              confirmLabel: options.confirmLabel,
+              cancelLabel: options.cancelLabel,
+              destructive: options.destructive,
+            },
+            blocking: options.blocking,
+            classifiers: options.classifiers,
+            onSuccess: options.onSuccess
+              ? (value) => {
+                  void options.onSuccess?.(value as T);
+                }
+              : undefined,
+            onError: (error) => {
+              classified = error;
+              options.onError?.(error);
+            },
+            onCancelled: () => {
+              cancelled = true;
+            },
+            onLogError: options.onLogError,
+          }
+        );
+        return { status: "confirmed", data };
+      } catch {
+        if (classified) {
+          return { status: "error", error: classified };
+        }
+        if (cancelled) {
+          return { status: "cancelled" };
+        }
         return { status: "cancelled" };
       }
-      return { status: "dismissed" };
     },
-    [modals]
+    [runner]
   );
 
-  return { confirm, confirmAndRun };
+  return useMemo(() => ({ confirm, confirmAndRun }), [confirm, confirmAndRun]);
 }

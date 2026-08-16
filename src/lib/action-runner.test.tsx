@@ -168,8 +168,12 @@ describe("loading-overlay adapter token lifecycle", () => {
     let seq = 0;
     return {
       calls,
-      begin: () => {
-        calls.push("begin");
+      begin: (options) => {
+        calls.push(
+          options?.label
+            ? `begin:${options.label}:${options.progress ?? ""}`
+            : "begin"
+        );
         seq += 1;
         return `token-${seq}`;
       },
@@ -185,7 +189,39 @@ describe("loading-overlay adapter token lifecycle", () => {
     };
   }
 
-  it("begins before invoke, succeeds on success, and does not release in finally", async () => {
+  it("does not begin an overlay token when blocking is omitted", async () => {
+    const overlay = createOverlaySpy();
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void run(async () => "done");
+          }}
+        >
+          run
+        </button>
+      );
+    }
+
+    render(
+      <Host loadingOverlay={overlay}>
+        <Controls />
+      </Host>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+
+    await waitFor(() => {
+      expect(overlay.calls).toEqual([]);
+    });
+  });
+
+  it("begins before invoke, succeeds then releases on success", async () => {
     const overlay = createOverlaySpy();
     const gate = deferred();
     let invoked = false;
@@ -196,11 +232,14 @@ describe("loading-overlay adapter token lifecycle", () => {
         <button
           type="button"
           onClick={() => {
-            void run(async () => {
-              invoked = true;
-              await gate.promise;
-              return "done";
-            });
+            void run(
+              async () => {
+                invoked = true;
+                await gate.promise;
+                return "done";
+              },
+              { blocking: true }
+            );
           }}
         >
           run
@@ -228,11 +267,15 @@ describe("loading-overlay adapter token lifecycle", () => {
     });
 
     await waitFor(() => {
-      expect(overlay.calls).toEqual(["begin", "succeed:token-1"]);
+      expect(overlay.calls).toEqual([
+        "begin",
+        "succeed:token-1",
+        "release:token-1",
+      ]);
     });
   });
 
-  it("fails the token on failure without a second terminal call", async () => {
+  it("maps blocking label and progress to begin", async () => {
     const overlay = createOverlaySpy();
 
     function Controls() {
@@ -241,9 +284,9 @@ describe("loading-overlay adapter token lifecycle", () => {
         <button
           type="button"
           onClick={() => {
-            void run(async () => {
-              throw new Error("nope");
-            }).catch(() => undefined);
+            void run(async () => "done", {
+              blocking: { label: "Saving", progress: 40 },
+            });
           }}
         >
           run
@@ -262,11 +305,52 @@ describe("loading-overlay adapter token lifecycle", () => {
     });
 
     await waitFor(() => {
-      expect(overlay.calls).toEqual(["begin", "fail:token-1"]);
+      expect(overlay.calls[0]).toBe("begin:Saving:40");
     });
   });
 
-  it("releases only on cancel before a terminal presentation", async () => {
+  it("fails the token then releases on failure", async () => {
+    const overlay = createOverlaySpy();
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void run(
+              async () => {
+                throw new Error("nope");
+              },
+              { blocking: true }
+            ).catch(() => undefined);
+          }}
+        >
+          run
+        </button>
+      );
+    }
+
+    render(
+      <Host loadingOverlay={overlay}>
+        <Controls />
+      </Host>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+
+    await waitFor(() => {
+      expect(overlay.calls).toEqual([
+        "begin",
+        "fail:token-1",
+        "release:token-1",
+      ]);
+    });
+  });
+
+  it("releases without succeeding when cancelled", async () => {
     const overlay = createOverlaySpy();
     const gate = deferred();
 
@@ -278,15 +362,18 @@ describe("loading-overlay adapter token lifecycle", () => {
           <button
             type="button"
             onClick={() => {
-              void run(async ({ signal }) => {
-                await gate.promise;
-                if (signal.aborted) {
-                  throw Object.assign(new Error("Aborted"), {
-                    name: "AbortError",
-                  });
-                }
-                return "late";
-              }).catch(() => undefined);
+              void run(
+                async ({ signal }) => {
+                  await gate.promise;
+                  if (signal.aborted) {
+                    throw Object.assign(new Error("Aborted"), {
+                      name: "AbortError",
+                    });
+                  }
+                  return "late";
+                },
+                { blocking: true }
+              ).catch(() => undefined);
             }}
           >
             run
@@ -325,9 +412,86 @@ describe("loading-overlay adapter token lifecycle", () => {
       expect(overlay.calls).toEqual(["begin", "release:token-1"]);
     });
   });
+
+  it("fails closed when blocking is set without a loading adapter", async () => {
+    let caught: unknown;
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void run(async () => "x", { blocking: true }).catch((error) => {
+              caught = error;
+            });
+          }}
+        >
+          run
+        </button>
+      );
+    }
+
+    render(
+      <Host>
+        <Controls />
+      </Host>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+
+    await waitFor(() => {
+      expect(caught).toEqual(
+        expect.objectContaining({
+          message: expect.stringMatching(/blocking.*loading/i),
+        })
+      );
+    });
+  });
 });
 
 describe("confirm adapter", () => {
+  it("fails closed when confirm is set without a confirm adapter", async () => {
+    let caught: unknown;
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void run(async () => "x", {
+              confirm: { title: "Sure?" },
+            }).catch((error) => {
+              caught = error;
+            });
+          }}
+        >
+          run
+        </button>
+      );
+    }
+
+    render(
+      <Host>
+        <Controls />
+      </Host>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+
+    await waitFor(() => {
+      expect(caught).toEqual(
+        expect.objectContaining({
+          message: expect.stringMatching(/confirm.*adapter/i),
+        })
+      );
+    });
+  });
   it("skips invocation when confirm is dismissed", async () => {
     let invoked = false;
     const confirm: ActionConfirmAdapter = {
@@ -419,6 +583,169 @@ describe("confirm adapter", () => {
     await waitFor(() => {
       expect(invoked).toBe(true);
       expect(screen.getByTestId("status")).toHaveTextContent("succeeded");
+    });
+  });
+
+  it("starts blocking overlay only after confirm", async () => {
+    const overlayCalls: string[] = [];
+    let resolveConfirm!: (value: "confirmed") => void;
+    const confirmGate = new Promise<"confirmed">((resolve) => {
+      resolveConfirm = resolve;
+    });
+    const confirm: ActionConfirmAdapter = {
+      confirm: async () => confirmGate,
+    };
+    const overlay: ActionLoadingOverlayAdapter = {
+      begin: () => {
+        overlayCalls.push("begin");
+        return "token-1";
+      },
+      succeed: () => {
+        overlayCalls.push("succeed");
+      },
+      fail: () => {
+        overlayCalls.push("fail");
+      },
+      release: () => {
+        overlayCalls.push("release");
+      },
+    };
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void run(async () => "ok", {
+              confirm: { title: "Sure?" },
+              blocking: true,
+            });
+          }}
+        >
+          run
+        </button>
+      );
+    }
+
+    render(
+      <Host confirm={confirm} loadingOverlay={overlay}>
+        <Controls />
+      </Host>
+    );
+
+    act(() => {
+      screen.getByRole("button", { name: "run" }).click();
+    });
+
+    await waitFor(() => {
+      expect(overlayCalls).toEqual([]);
+    });
+
+    await act(async () => {
+      resolveConfirm("confirmed");
+    });
+
+    await waitFor(() => {
+      expect(overlayCalls).toEqual(["begin", "succeed", "release"]);
+    });
+  });
+});
+
+describe("replace releases blocking token", () => {
+  it("releases the in-flight token when onDuplicate is replace", async () => {
+    const overlay = {
+      calls: [] as string[],
+      begin: () => {
+        overlay.calls.push("begin");
+        return `token-${overlay.calls.filter((c) => c === "begin").length}`;
+      },
+      succeed: (token: string) => {
+        overlay.calls.push(`succeed:${token}`);
+      },
+      fail: (token: string) => {
+        overlay.calls.push(`fail:${token}`);
+      },
+      release: (token: string) => {
+        overlay.calls.push(`release:${token}`);
+      },
+    };
+    const first = deferred();
+    let secondRan = false;
+
+    function Controls() {
+      const { run } = useActionRunner();
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              void run(
+                async ({ signal }) => {
+                  await first.promise;
+                  if (signal.aborted) {
+                    throw Object.assign(new Error("Aborted"), {
+                      name: "AbortError",
+                    });
+                  }
+                  return "first";
+                },
+                {
+                  blocking: true,
+                  onDuplicate: "replace",
+                  concurrency: "parallel",
+                }
+              ).catch(() => undefined);
+            }}
+          >
+            first
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void run(
+                async () => {
+                  secondRan = true;
+                  return "second";
+                },
+                {
+                  blocking: true,
+                  onDuplicate: "replace",
+                  concurrency: "parallel",
+                }
+              );
+            }}
+          >
+            second
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <Host loadingOverlay={overlay}>
+        <Controls />
+      </Host>
+    );
+
+    act(() => {
+      screen.getByRole("button", { name: "first" }).click();
+    });
+
+    await waitFor(() => {
+      expect(overlay.calls).toEqual(["begin"]);
+    });
+
+    await act(async () => {
+      screen.getByRole("button", { name: "second" }).click();
+      first.resolve();
+    });
+
+    await waitFor(() => {
+      expect(secondRan).toBe(true);
+      expect(overlay.calls).toContain("release:token-1");
+      expect(overlay.calls).toContain("succeed:token-2");
+      expect(overlay.calls).toContain("release:token-2");
     });
   });
 });
@@ -590,7 +917,7 @@ describe("concurrency and abort", () => {
                     });
                   });
                 },
-                { timeoutMs: 10 }
+                { timeoutMs: 10, blocking: true }
               ).catch(() => undefined);
             }}
           >
@@ -621,7 +948,7 @@ describe("concurrency and abort", () => {
     await waitFor(() => {
       expect(screen.getByTestId("status")).toHaveTextContent("failed");
       expect(screen.getByTestId("error-category")).toHaveTextContent("timeout");
-      expect(overlay.calls).toEqual(["begin", "fail"]);
+      expect(overlay.calls).toEqual(["begin", "fail", "release"]);
     });
   });
 
@@ -847,7 +1174,7 @@ describe("adapter failure isolation", () => {
           <button
             type="button"
             onClick={() => {
-              void run(async () => "ok").then((value) => {
+              void run(async () => "ok", { blocking: true }).then((value) => {
                 result = value;
               });
             }}
@@ -870,6 +1197,77 @@ describe("adapter failure isolation", () => {
 
     await waitFor(() => {
       expect(result).toBe("ok");
+      expect(screen.getByTestId("status")).toHaveTextContent("succeeded");
+    });
+  });
+});
+
+describe("default adapter wiring", () => {
+  it("binds confirm-dialog and loading-overlay providers without manual props", async () => {
+    const { ConfirmDialogProvider } =
+      await import("../../infra/confirm-dialog");
+    const { LoadingOverlay, LoadingOverlayProvider } =
+      await import("../../infra/loading-overlay");
+    const { ModalManager, ModalManagerProvider } =
+      await import("../../infra/modal-manager-provider");
+
+    let result: string | undefined;
+
+    function Controls() {
+      const { run, state } = useActionRunner();
+      return (
+        <>
+          <span data-testid="status">{state.status}</span>
+          <button
+            type="button"
+            onClick={() => {
+              void run(
+                async () => {
+                  result = "deleted";
+                  return result;
+                },
+                {
+                  confirm: {
+                    title: "Delete?",
+                    confirmLabel: "Delete",
+                    destructive: true,
+                  },
+                  blocking: { label: "Deleting" },
+                }
+              );
+            }}
+          >
+            delete
+          </button>
+        </>
+      );
+    }
+
+    render(
+      <ModalManagerProvider>
+        <ModalManager />
+        <ConfirmDialogProvider>
+          <LoadingOverlayProvider successDurationMs={0} errorDurationMs={0}>
+            <ActionRunnerProvider>
+              <LoadingOverlay />
+              <Controls />
+            </ActionRunnerProvider>
+          </LoadingOverlayProvider>
+        </ConfirmDialogProvider>
+      </ModalManagerProvider>
+    );
+
+    await act(async () => {
+      screen.getByRole("button", { name: "delete" }).click();
+    });
+    expect(screen.getByRole("alertdialog", { name: "Delete?" })).toBeVisible();
+
+    await act(async () => {
+      screen.getByRole("button", { name: "Delete" }).click();
+    });
+
+    await waitFor(() => {
+      expect(result).toBe("deleted");
       expect(screen.getByTestId("status")).toHaveTextContent("succeeded");
     });
   });

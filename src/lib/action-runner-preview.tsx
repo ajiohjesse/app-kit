@@ -28,7 +28,7 @@ function PreviewBody() {
                 await new Promise((resolve) => setTimeout(resolve, 600));
                 return "saved";
               },
-              { label: "Saving" }
+              { blocking: { label: "Saving" } }
             );
           }}
         >

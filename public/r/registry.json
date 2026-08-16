@@ -26,7 +26,7 @@
       "name": "confirm-dialog",
       "type": "registry:component",
       "title": "Global Confirm Dialog",
-      "description": "Modal-manager Alert Dialog workflow for boolean confirm and confirm-and-run, with ErrorClassification errors.",
+      "description": "Modal-manager Alert Dialog confirm UI, with confirmAndRun delegated to Action runner.",
       "files": [
         {
           "path": "infra/confirm-dialog.tsx",
@@ -36,6 +36,7 @@
       ],
       "registryDependencies": [
         "@app-kit/modal-manager",
+        "@app-kit/action-runner",
         "@app-kit/error-classification"
       ]
     },
@@ -77,7 +78,7 @@
       "name": "action-runner",
       "type": "registry:component",
       "title": "Async Action Wrapper",
-      "description": "Scoped typed async lifecycles with optional confirm and loading-overlay adapters, ErrorClassification failures, and no motion or toast library.",
+      "description": "Scoped typed async lifecycles with optional confirm and blocking loading adapters, ErrorClassification failures, and no motion or toast library.",
       "files": [
         {
           "path": "infra/action-runner.tsx",

@@ -1,6 +1,10 @@
 "use client";
 
-import { useConfirmDialog } from "../../../infra/confirm-dialog";
+import { ActionRunnerProvider } from "../../../infra/action-runner";
+import {
+  ConfirmDialogProvider,
+  useConfirmDialog,
+} from "../../../infra/confirm-dialog";
 import {
   ModalManager,
   ModalManagerProvider,
@@ -44,7 +48,11 @@ export default function ConfirmDialogSmokePage() {
   return (
     <ModalManagerProvider>
       <ModalManager />
-      <SmokeBody />
+      <ConfirmDialogProvider>
+        <ActionRunnerProvider>
+          <SmokeBody />
+        </ActionRunnerProvider>
+      </ConfirmDialogProvider>
     </ModalManagerProvider>
   );
 }
