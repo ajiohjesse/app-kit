@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { asDirtyStateSource } from "../../../infra/draft-autosave";
+import { useDraftAutosave } from "../../../infra/draft-autosave-provider";
 import { useConfirmDialog } from "../../../infra/confirm-dialog";
 import {
   ModalManager,
@@ -16,13 +18,25 @@ function SmokeBody() {
   const [navCount, setNavCount] = useState(0);
   const [beforeUnloadBound, setBeforeUnloadBound] = useState(false);
 
-  const { isDirty, markDirty, markClean, attemptNavigation } =
-    useUnsavedChanges({
-      confirm: confirmAdapter,
-      navigate: async () => {
-        setNavCount((count) => count + 1);
-      },
-    });
+  const { controller, update, discard } = useDraftAutosave({
+    draftId: "unsaved-smoke",
+    schemaVersion: "v1",
+    restoreOnMount: false,
+    debounceMs: 60_000,
+  });
+
+  const dirtySources = useMemo(
+    () => [asDirtyStateSource(controller)],
+    [controller]
+  );
+
+  const { isDirty, markClean, attemptNavigation } = useUnsavedChanges({
+    dirtySources,
+    confirm: confirmAdapter,
+    navigate: async () => {
+      setNavCount((count) => count + 1);
+    },
+  });
 
   return (
     <main>
@@ -33,12 +47,21 @@ function SmokeBody() {
           aria-label="note"
           value={note}
           onChange={(event) => {
-            setNote(event.target.value);
-            markDirty();
+            const next = event.target.value;
+            setNote(next);
+            update({ note: next });
           }}
         />
       </label>
-      <button type="button" onClick={() => markClean()}>
+      <button
+        type="button"
+        onClick={() => {
+          void discard().then(() => {
+            markClean();
+            setNote("");
+          });
+        }}
+      >
         Mark clean
       </button>
       <button

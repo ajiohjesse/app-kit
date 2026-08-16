@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { FakeClock } from "@/test-utils/fake-clock";
 import {
   ANONYMOUS_DRAFT_NAMESPACE,
+  asDirtyStateSource,
   createDraftAutosave,
   createLocalStorageDraftStore,
   createMemoryDraftStore,
@@ -270,6 +271,7 @@ describe("restore discard and sessionStorage default", () => {
     const restored = await other.restore();
     expect(restored.status).toBe("restored");
     expect(other.getState().payload).toEqual({ title: "keep-me" });
+    expect(other.getState().dirty).toBe(true);
 
     await other.discard();
     expect(
@@ -364,3 +366,57 @@ function createMemorySessionStorage(): Storage {
 function createMemoryLocalStorage(): Storage {
   return createMemorySessionStorage();
 }
+
+describe("Dirty state adapter", () => {
+  it("exposes Draft dirty/flush/discard through asDirtyStateSource", async () => {
+    const store = createMemoryDraftStore();
+    const draft = createDraftAutosave({
+      draftId: "form-1",
+      schemaVersion: "v1",
+      store,
+      getNamespace: () => ANONYMOUS_DRAFT_NAMESPACE,
+      debounceMs: 60_000,
+    });
+    const source = asDirtyStateSource(draft);
+    const listener = vi.fn();
+    source.subscribe(listener);
+
+    expect(source.getIsDirty()).toBe(false);
+    draft.update({ title: "draft" });
+    expect(source.getIsDirty()).toBe(true);
+    expect(listener).toHaveBeenCalled();
+
+    const flushed = await source.flush?.();
+    expect(flushed).toMatchObject({ status: "saved" });
+    expect(source.getIsDirty()).toBe(false);
+
+    draft.update({ title: "again" });
+    await source.discard?.();
+    expect(source.getIsDirty()).toBe(false);
+    expect(draft.getState().lifecycle).toBe("discarded");
+  });
+
+  it("keeps failed persist dirty for the Dirty state seam", async () => {
+    const store: ReturnType<typeof createMemoryDraftStore> = {
+      ...createMemoryDraftStore(),
+      async set() {
+        return {
+          status: "error",
+          reason: "unavailable",
+          message: "offline",
+        };
+      },
+    };
+    const draft = createDraftAutosave({
+      draftId: "form-1",
+      schemaVersion: "v1",
+      store,
+      getNamespace: () => ANONYMOUS_DRAFT_NAMESPACE,
+    });
+    const source = asDirtyStateSource(draft);
+    draft.update({ title: "x" });
+    await draft.flush();
+    expect(draft.getState().lifecycle).toBe("failed");
+    expect(source.getIsDirty()).toBe(true);
+  });
+});

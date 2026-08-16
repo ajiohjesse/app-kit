@@ -47,13 +47,78 @@ export type UnsavedChangesWindow = {
   ) => void;
 };
 
-export type CreateUnsavedChangesGuardOptions = {
-  /** When provided, controlled dirty stays authoritative. */
+/** Consumer-owned Dirty state seam: observe, optionally flush/discard. */
+export type DirtyStateSource = {
+  getIsDirty: () => boolean;
+  subscribe: (listener: () => void) => () => void;
+  flush?: () => Promise<unknown>;
+  discard?: () => Promise<void> | void;
+};
+
+export type DirtyStateFlushResult = {
+  ok: boolean;
+};
+
+export type DirtyStateContext = {
+  isDirty: boolean;
+  /** Flush every Dirty state source that exposes flush. Failures → ok:false. */
+  flush: () => Promise<DirtyStateFlushResult>;
+  /** Discard every Dirty state source that exposes discard. */
+  discard: () => Promise<void>;
+};
+
+export type CreateDirtyStateSourceOptions = {
   getIsDirty?: () => boolean;
+  flush?: () => Promise<unknown>;
+  discard?: () => Promise<void> | void;
+};
+
+export type MemoryDirtyStateSource = DirtyStateSource & {
+  setDirty: (dirty: boolean) => void;
+};
+
+/** In-memory Dirty state source for tests and form adapters. */
+export function createDirtyStateSource(
+  initialDirty = false,
+  options?: CreateDirtyStateSourceOptions
+): MemoryDirtyStateSource {
+  let dirty = initialDirty;
+  const listeners = new Set<() => void>();
+
+  return {
+    getIsDirty: () => (options?.getIsDirty ? options.getIsDirty() : dirty),
+    setDirty(next) {
+      dirty = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    flush: options?.flush,
+    discard: options?.discard,
+  };
+}
+
+export type CreateUnsavedChangesGuardOptions = {
+  /**
+   * Controlled dirty — when set, stays authoritative over markDirty/markClean.
+   * Still ORs with registered Dirty state sources.
+   */
+  getIsDirty?: () => boolean;
+  /** Additional Dirty state sources (Draft adapters, fakes, form fields). */
+  dirtySources?: DirtyStateSource[];
   policy?: DirtyNavigationPolicy;
   confirm?: UnsavedConfirmAdapter;
   confirmOptions?: UnsavedConfirmOptions;
-  onCustomFlow?: (intent: NavigationIntent) => Promise<ConfirmSettlement>;
+  onCustomFlow?: (
+    intent: NavigationIntent,
+    dirty: DirtyStateContext
+  ) => Promise<ConfirmSettlement>;
   navigate: UnsavedChangesNavigate;
   cancelNavigation?: (intent: NavigationIntent) => void;
   createBypassToken?: () => BypassToken;
@@ -64,6 +129,8 @@ export type UnsavedChangesGuard = {
   getIsDirty: () => boolean;
   markDirty: () => void;
   markClean: () => void;
+  /** Re-read Dirty state sources and refresh beforeunload / subscribers. */
+  resync: () => void;
   attemptNavigation: (
     intent: NavigationIntent,
     options?: { bypassToken?: BypassToken }
@@ -104,6 +171,18 @@ function resolveWindow(
   return globalThis.window;
 }
 
+/** Draft-style flush results use status; throws also count as failure. */
+function isDirtyStateFlushFailure(result: unknown): boolean {
+  if (result === null || typeof result !== "object") {
+    return false;
+  }
+  if (!("status" in result)) {
+    return false;
+  }
+  const status = (result as { status: unknown }).status;
+  return status === "error" || status === "conflict" || status === "blocked";
+}
+
 export function createUnsavedChangesGuard(
   options: CreateUnsavedChangesGuardOptions
 ): UnsavedChangesGuard {
@@ -122,6 +201,7 @@ export function createUnsavedChangesGuard(
   let pendingBypassToken: BypassToken | null = null;
   let confirming = false;
   const listeners = new Set<() => void>();
+  const dirtySources = options.dirtySources ?? [];
 
   const notify = () => {
     for (const listener of listeners) {
@@ -129,11 +209,18 @@ export function createUnsavedChangesGuard(
     }
   };
 
-  const getIsDirty = () => {
+  const getOwnedDirty = () => {
     if (options.getIsDirty) {
       return options.getIsDirty();
     }
     return internalDirty;
+  };
+
+  const getIsDirty = () => {
+    if (getOwnedDirty()) {
+      return true;
+    }
+    return dirtySources.some((source) => source.getIsDirty());
   };
 
   const beforeUnloadListener = (event: BeforeUnloadEvent) => {
@@ -161,20 +248,61 @@ export function createUnsavedChangesGuard(
     }
   };
 
+  const resync = () => {
+    syncBeforeUnload();
+    notify();
+  };
+
+  for (const source of dirtySources) {
+    source.subscribe(() => {
+      resync();
+    });
+  }
+
+  const dirtyContext = (): DirtyStateContext => ({
+    isDirty: getIsDirty(),
+    async flush() {
+      try {
+        for (const source of dirtySources) {
+          if (!source.flush) {
+            continue;
+          }
+          const result = await source.flush();
+          if (isDirtyStateFlushFailure(result)) {
+            resync();
+            return { ok: false };
+          }
+        }
+        resync();
+        return { ok: true };
+      } catch {
+        resync();
+        return { ok: false };
+      }
+    },
+    async discard() {
+      for (const source of dirtySources) {
+        if (!source.discard) {
+          continue;
+        }
+        await source.discard();
+      }
+      resync();
+    },
+  });
+
   const markDirty = () => {
     if (!options.getIsDirty) {
       internalDirty = true;
     }
-    syncBeforeUnload();
-    notify();
+    resync();
   };
 
   const markClean = () => {
     if (!options.getIsDirty) {
       internalDirty = false;
     }
-    syncBeforeUnload();
-    notify();
+    resync();
   };
 
   const runNavigate = async (
@@ -256,7 +384,7 @@ export function createUnsavedChangesGuard(
       confirming = true;
       pendingIntent = intent;
       try {
-        const settlement = await options.onCustomFlow(intent);
+        const settlement = await options.onCustomFlow(intent, dirtyContext());
         return await settleLeave(intent, settlement);
       } finally {
         confirming = false;
@@ -334,6 +462,7 @@ export function createUnsavedChangesGuard(
     getIsDirty,
     markDirty,
     markClean,
+    resync,
     attemptNavigation,
     cancelNavigation,
     retryNavigation,

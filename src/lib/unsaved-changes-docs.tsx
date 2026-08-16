@@ -217,6 +217,58 @@ export function SpaEditor() {
 }
 `;
 
+const draftSeamExample = `"use client";
+
+import { useMemo } from "react";
+import { asDirtyStateSource } from "@/lib/draft-autosave";
+import { useDraftAutosave } from "@/components/draft-autosave-provider";
+import { useConfirmDialog } from "@/components/confirm-dialog";
+import { useUnsavedChanges } from "@/components/unsaved-changes-provider";
+
+export function DraftGuardedForm() {
+  const { confirm } = useConfirmDialog();
+  const { controller, update, flush, discard } = useDraftAutosave({
+    draftId: "invoice-form",
+    schemaVersion: "v1",
+  });
+  const dirtySources = useMemo(
+    () => [asDirtyStateSource(controller)],
+    [controller]
+  );
+  const { attemptNavigation, markClean } = useUnsavedChanges({
+    dirtySources,
+    confirm: { confirm },
+    navigate: async (intent) => {
+      window.location.assign(intent.href);
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void flush().then(async (result) => {
+          if (result.status !== "saved" && result.status !== "unchanged") {
+            return;
+          }
+          await discard();
+          markClean();
+        });
+      }}
+    >
+      <textarea onChange={(event) => update({ body: event.target.value })} />
+      <button
+        type="button"
+        onClick={() => void attemptNavigation({ href: "/inbox" })}
+      >
+        Leave
+      </button>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+`;
+
 const nextRecipe = `"use client";
 
 import { useRouter } from "next/navigation";
@@ -258,6 +310,11 @@ export const unsavedChangesDocs: CompleteDocSlots = {
       language: "tsx",
       code: nextLimitationExample,
     },
+    {
+      label: "draft-dirty-source.tsx",
+      language: "tsx",
+      code: draftSeamExample,
+    },
   ],
   spaRecipes: [{ label: "spa-router.tsx", language: "tsx", code: spaRecipe }],
   nextRecipes: [
@@ -268,8 +325,16 @@ export const unsavedChangesDocs: CompleteDocSlots = {
       <dt className="mono">createUnsavedChangesGuard(options)</dt>
       <dd>
         Framework-neutral controller. Dirty is consumer-owned via{" "}
-        <code>getIsDirty</code> or <code>markDirty</code>/<code>markClean</code>
-        . Registers <code>beforeunload</code> only while mounted and dirty.
+        <code>getIsDirty</code>, <code>markDirty</code>/<code>markClean</code>,
+        and optional <code>dirtySources</code> (OR together). Registers{" "}
+        <code>beforeunload</code> only while mounted and dirty.
+      </dd>
+      <dt className="mono">DirtyStateSource</dt>
+      <dd>
+        Seam shape: <code>getIsDirty</code>, <code>subscribe</code>, optional{" "}
+        <code>flush</code>/<code>discard</code>. Use{" "}
+        <code>asDirtyStateSource(draft)</code> from draft-autosave, or{" "}
+        <code>createDirtyStateSource()</code> for tests/forms.
       </dd>
       <dt className="mono">useUnsavedChanges(options)</dt>
       <dd>
@@ -277,12 +342,16 @@ export const unsavedChangesDocs: CompleteDocSlots = {
         <code>attemptNavigation</code>, <code>cancelNavigation</code>, and{" "}
         <code>retryNavigation</code>. Inject{" "}
         <code>confirm: {"{ confirm }"}</code> from{" "}
-        <code>useConfirmDialog()</code>.
+        <code>useConfirmDialog()</code>. Pass <code>dirtySources</code> to
+        observe Draft without hand-syncing.
       </dd>
       <dt className="mono">policy</dt>
       <dd>
         <code>allow</code>, <code>block-and-confirm</code> (default), or{" "}
-        <code>block-with-custom-flow</code>. Never silently blocks or discards.
+        <code>block-with-custom-flow</code>. Custom flow receives{" "}
+        <code>(intent, dirty)</code> with <code>flush</code>/
+        <code>discard</code>. Never silently blocks or discards. Default Leave
+        does not auto-flush.
       </dd>
       <dt className="mono">attemptNavigation(intent)</dt>
       <dd>
@@ -304,7 +373,7 @@ export const unsavedChangesDocs: CompleteDocSlots = {
     "Next.js App Router in-app navigation blocking is best-effort: wrap links, forms, and programmatic router calls. There is no universal App Router lock.",
     "beforeunload shows the browser's generic warning; custom text is neither promised nor required.",
     "Hard reloads, address-bar navigation, crashes, and guaranteed async flush during unload are outside this item.",
-    "Independent of draft-autosave — call flush()/markClean() explicitly when coordinating saves.",
+    "Dirty state seam with draft-autosave is optional: pass asDirtyStateSource(draft) via dirtySources. Both registry items stay independently installable; default Leave does not auto-flush.",
     "Manual-copy fallback: copy unsaved-changes.ts to src/lib/unsaved-changes.ts and unsaved-changes-provider.tsx to src/components/unsaved-changes-provider.tsx.",
   ],
 };

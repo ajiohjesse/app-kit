@@ -17,6 +17,9 @@ test("docs page is a complete unsaved-changes item", async ({ page }) => {
   await expect(
     page.getByText("next-limitation.tsx", { exact: true })
   ).toBeVisible();
+  await expect(
+    page.getByText("draft-dirty-source.tsx", { exact: true })
+  ).toBeVisible();
   await expect(page.getByText("spa-router.tsx", { exact: true })).toBeVisible();
   await expect(
     page.getByText("next-app-router.tsx", { exact: true })
@@ -67,4 +70,22 @@ test("smoke confirms leave once and registers unload while dirty", async ({
     .click();
   await expect(page.getByText("outcome:navigated")).toBeVisible();
   await expect(page.getByText("navCount:1")).toBeVisible();
+});
+
+test("dirty Draft blocks in-app leave until confirmed", async ({ page }) => {
+  await page.goto("/unsaved-changes-smoke");
+
+  await page.getByLabel("note").fill("keep me");
+  await expect(page.getByText("dirty:yes")).toBeVisible();
+
+  await page.getByRole("main").getByRole("button", { name: "Leave" }).click();
+  await expect(
+    page.getByRole("alertdialog", { name: "Leave without saving?" })
+  ).toBeVisible();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Stay" })
+    .click();
+  await expect(page.getByText("dirty:yes")).toBeVisible();
+  await expect(page.getByText("navCount:0")).toBeVisible();
 });

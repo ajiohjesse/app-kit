@@ -437,6 +437,21 @@ export type DraftAutosave = {
   ) => Promise<DraftAdoptResult>;
 };
 
+/** Adapt Draft lifecycle to the Unsaved-changes Dirty state seam. */
+export function asDirtyStateSource(draft: DraftAutosave): {
+  getIsDirty: () => boolean;
+  subscribe: (listener: () => void) => () => void;
+  flush: () => Promise<DraftSaveResult>;
+  discard: () => Promise<void>;
+} {
+  return {
+    getIsDirty: () => draft.getState().dirty,
+    subscribe: (listener) => draft.subscribe(listener),
+    flush: () => draft.flush(),
+    discard: () => draft.discard(),
+  };
+}
+
 export function createDraftAutosave(
   options: CreateDraftAutosaveOptions
 ): DraftAutosave {
@@ -711,9 +726,9 @@ export function createDraftAutosave(
         payload = resolved;
         revision = stored.revision;
         serializedSnapshot = JSON.stringify(resolved);
-        dirty = JSON.stringify(resolved) !== JSON.stringify(stored.payload);
+        dirty = true;
         conflict = null;
-        lifecycle = "saved";
+        lifecycle = "dirty";
         emit();
         return { status: "restored", record: { ...stored, payload: resolved } };
       }
@@ -721,10 +736,11 @@ export function createDraftAutosave(
       payload = stored.payload;
       revision = stored.revision;
       serializedSnapshot = JSON.stringify(stored.payload);
-      dirty = false;
+      // Fail-closed: restored Draft stays dirty until flush, discard, or submit clears it.
+      dirty = true;
       conflict = null;
       lastError = null;
-      lifecycle = "saved";
+      lifecycle = "dirty";
       emit();
       return { status: "restored", record: stored };
     },

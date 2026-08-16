@@ -26,6 +26,7 @@ describe("unsaved-changes docs", () => {
     expect(screen.getByText("confirm-leave.tsx")).toBeInTheDocument();
     expect(screen.getByText("one-shot-retry.tsx")).toBeInTheDocument();
     expect(screen.getByText("next-limitation.tsx")).toBeInTheDocument();
+    expect(screen.getByText("draft-dirty-source.tsx")).toBeInTheDocument();
     expect(screen.getByText("spa-router.tsx")).toBeInTheDocument();
     expect(screen.getByText("next-app-router.tsx")).toBeInTheDocument();
     expect(screen.getByText("useUnsavedChanges(options)")).toBeInTheDocument();

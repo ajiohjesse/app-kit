@@ -193,7 +193,7 @@ export const docs: DocItem[] = [
     shortTitle: "Unsaved changes",
     category: "Data & Forms",
     problem:
-      "Users lose in-progress edits by navigating away or closing the tab without warning. Dirty state stays consumer-owned; leave confirmation uses injected confirm-dialog with one-shot navigation retry. Next App Router in-app blocking is best-effort.",
+      "Users lose in-progress edits by navigating away or closing the tab without warning. Dirty state stays consumer-owned (markDirty/markClean, controlled isDirty, and optional Dirty state sources such as Draft). Leave confirmation uses injected confirm-dialog with one-shot navigation retry. Next App Router in-app blocking is best-effort.",
     questions: [],
     registryDependencies: ["@app-kit/confirm-dialog"],
   },

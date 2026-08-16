@@ -247,6 +247,13 @@ export const draftAutosaveDocs: CompleteDocSlots = {
         sessionStorage and restores on mount unless{" "}
         <code>restoreOnMount: false</code>.
       </dd>
+      <dt className="mono">asDirtyStateSource(draft)</dt>
+      <dd>
+        Adapts Draft lifecycle to the Unsaved-changes Dirty state seam. Pass the
+        result via <code>dirtySources</code> on <code>useUnsavedChanges</code>.
+        Restored Drafts are dirty until flush, discard, or a successful submit
+        that clears dirty.
+      </dd>
     </dl>
   ),
   limitations: [
@@ -254,7 +261,7 @@ export const draftAutosaveDocs: CompleteDocSlots = {
     "Shared stores (localStorage, IndexedDB, server) must honor revision conflicts; never last-write-wins.",
     "Auth transitions clear in-memory state for the new namespace. Call adoptFromNamespace explicitly to bring anonymous data across.",
     "Drafts are not pending-auth-action intents and are never replayed as mutations. Optional action-runner wiring is feedback only.",
-    "beforeunload persistence is best-effort; call flush() before navigation or submit.",
+    "beforeunload persistence is best-effort; pair with unsaved-changes dirtySources for leave guards, or call flush() before navigation/submit.",
     "Manual-copy fallback: copy draft-autosave.ts to src/lib/draft-autosave.ts and draft-autosave-provider.tsx to src/components/draft-autosave-provider.tsx.",
   ],
 };

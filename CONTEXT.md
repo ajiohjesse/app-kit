@@ -141,8 +141,8 @@ A boundary that protects dirty user work from browser unload or intercepted navi
 _Avoid_: Form guard, navigation blocker
 
 **Dirty state**:
-The consumer-owned indication that current user work differs from the last accepted clean baseline.
-_Avoid_: Unsaved boolean inferred by the guard
+The consumer-owned indication that current user work differs from the last accepted clean baseline. Draft autosave and Unsaved-changes guard meet at this seam via Dirty state sources (`getIsDirty`, `subscribe`, optional `flush`/`discard`) without merging the Registry items.
+_Avoid_: Unsaved boolean inferred by the guard, dirty provider
 
 **Navigation retry**:
 The single guarded re-attempt of an originally requested navigation after the user confirms leaving.
