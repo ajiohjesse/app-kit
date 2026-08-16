@@ -177,7 +177,7 @@
       "name": "auth-guard",
       "type": "registry:item",
       "title": "Auth Guard",
-      "description": "Protected routes and guarded actions with explicit unauthenticated policies: redirect-without-resume, redirect-and-resume, or inline. Resume fails closed without pending-auth-action. Session seed is UX-only.",
+      "description": "Protected routes and guarded actions with explicit unauthenticated policies: redirect-without-resume, redirect-and-resume, or inline. Hard-depends on pending-auth-action; AuthGuardProvider wires the Pending-action store. Session seed is UX-only.",
       "files": [
         {
           "path": "infra/auth-guard.ts",
@@ -192,7 +192,8 @@
       ],
       "registryDependencies": [
         "@app-kit/authentication-core",
-        "@app-kit/error-classification"
+        "@app-kit/error-classification",
+        "@app-kit/pending-auth-action"
       ]
     },
     {

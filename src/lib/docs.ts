@@ -136,11 +136,12 @@ export const docs: DocItem[] = [
     shortTitle: "Auth guard",
     category: "Auth & Session",
     problem:
-      "Protected routes and guarded actions with an explicit unauthenticated policy (redirect-without-resume, redirect-and-resume, or inline). Resume fails closed without pending-auth-action; session seed is UX-only.",
+      "Protected routes and guarded actions with an explicit unauthenticated policy (redirect-without-resume, redirect-and-resume, or inline). Hard-depends on pending-auth-action; AuthGuardProvider wires Resume operation. Session seed is UX-only.",
     questions: [],
     registryDependencies: [
       "@app-kit/authentication-core",
       "@app-kit/error-classification",
+      "@app-kit/pending-auth-action",
     ],
   },
   {

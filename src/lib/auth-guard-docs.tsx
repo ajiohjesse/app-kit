@@ -30,33 +30,48 @@ function BillingSettings() {
 
 const redirectAndResumeExample = `"use client";
 
-import { AuthGuard, withAuthGuard } from "@/components/auth-guard-boundary";
-import { usePendingAuthAction } from "@/components/pending-auth-action-provider";
-import { useSession } from "@/components/authentication-core-provider";
+import {
+  AuthGuardProvider,
+  useGuardedAction,
+} from "@/components/auth-guard-boundary";
+import { PendingActionHandlerRegistration } from "@/components/pending-auth-action-provider";
+import { AuthProvider, useSession } from "@/components/authentication-core-provider";
+import type { AuthenticationAdapter } from "@/lib/authentication-core";
 
-export function SaveDraftButton() {
+export function App({ adapter }: { adapter: AuthenticationAdapter }) {
+  return (
+    <AuthProvider adapter={adapter}>
+      <AuthGuardProvider
+        navigate={(to) => {
+          window.location.assign(to);
+        }}
+      >
+        <PendingActionHandlerRegistration
+          kind="save-draft"
+          handler={async ({ intent, session, idempotencyKey }) => {
+            await persistDraft(intent.payload, session.user.id, idempotencyKey);
+            return { status: "succeeded" };
+          }}
+        />
+        <SaveDraftButton />
+      </AuthGuardProvider>
+    </AuthProvider>
+  );
+}
+
+function SaveDraftButton() {
   const auth = useSession();
-  const { registerIntent } = usePendingAuthAction();
-
-  const save = withAuthGuard(
+  const save = useGuardedAction(
     async (input: { draftId: string }, { session }) => {
-      await persistDraft(input.draftId, session.user.id);
+      await persistDraft(input, session.user.id, \`save-\${input.draftId}\`);
       return "saved";
     },
     {
-      readSession: async () => {
-        // Live re-check — do not authorize from seed alone.
-        const live = await fetch("/api/session").then((r) => r.json());
-        return live;
-      },
+      readSession: async () => auth,
       policy: "redirect-and-resume",
       signInTo: "/sign-in",
       navigate: (to) => {
         window.location.assign(to);
-      },
-      registerPendingIntent: async (intent) => {
-        const saved = await registerIntent(intent);
-        return { id: saved.id };
       },
       pendingIntent: (input) => ({
         kind: "save-draft",
@@ -76,7 +91,11 @@ export function SaveDraftButton() {
   );
 }
 
-async function persistDraft(_draftId: string, _userId: string) {}
+async function persistDraft(
+  _payload: unknown,
+  _userId: string,
+  _idempotencyKey: string
+) {}
 `;
 
 const inlineExample = `"use client";
@@ -140,7 +159,7 @@ export async function tryResumeWithoutPending() {
     readSession: async () => unauthenticated,
     policy: "redirect-and-resume",
     signInTo: "/sign-in",
-    // registerPendingIntent intentionally omitted
+    // pendingActionStore / registerPendingIntent intentionally omitted
     pendingIntent: {
       kind: "open",
       version: 1,
@@ -160,7 +179,10 @@ export async function tryResumeWithoutPending() {
 const spaRecipe = `"use client";
 
 import { AuthProvider } from "@/components/authentication-core-provider";
-import { AuthGuard } from "@/components/auth-guard-boundary";
+import {
+  AuthGuard,
+  AuthGuardProvider,
+} from "@/components/auth-guard-boundary";
 import type { AuthenticationAdapter } from "@/lib/authentication-core";
 
 export function SpaApp({
@@ -170,16 +192,22 @@ export function SpaApp({
 }) {
   return (
     <AuthProvider adapter={adapter}>
-      <AuthGuard
-        policy="redirect-without-resume"
-        signInTo="/sign-in"
+      <AuthGuardProvider
         navigate={(to) => {
           window.history.pushState({}, "", to);
         }}
-        loading={<p>Loading session…</p>}
       >
-        <Dashboard />
-      </AuthGuard>
+        <AuthGuard
+          policy="redirect-without-resume"
+          signInTo="/sign-in"
+          navigate={(to) => {
+            window.history.pushState({}, "", to);
+          }}
+          loading={<p>Loading session…</p>}
+        >
+          <Dashboard />
+        </AuthGuard>
+      </AuthGuardProvider>
     </AuthProvider>
   );
 }
@@ -297,9 +325,13 @@ export const authGuardDocs: CompleteDocSlots = {
       <dt className="mono">withAuthGuard(action, options)</dt>
       <dd>
         Typed action wrapper. Inject <code>readSession</code>, explicit{" "}
-        <code>policy</code>, optional <code>authorize</code>, and policy wiring
-        (<code>navigate</code>, <code>registerPendingIntent</code>,{" "}
-        <code>pendingIntent</code>). Re-checks the live session immediately
+        <code>policy</code>, optional <code>authorize</code>, and for{" "}
+        <code>redirect-and-resume</code> a <code>pendingIntent</code>. Under{" "}
+        <code>AuthGuardProvider</code> the Pending-action store is wired
+        automatically — no consumer <code>registerPendingIntent</code>. Headless
+        callers may pass <code>pendingActionStore</code> or{" "}
+        <code>registerPendingIntent</code>; omitting both yields{" "}
+        <code>resume-unavailable</code>. Re-checks the live session immediately
         before execution. Seed snapshots must not authorize mutations.
       </dd>
       <dt className="mono">requireSession(options)</dt>
@@ -308,21 +340,37 @@ export const authGuardDocs: CompleteDocSlots = {
         or typed unauthenticated outcomes including{" "}
         <code>resume-unavailable</code>.
       </dd>
+      <dt className="mono">AuthGuardProvider</dt>
+      <dd>
+        Wires the Pending-action store (tab-local by default; injectable store
+        override). After Session is authenticated, runs Resume for{" "}
+        <code>resumeIntentId</code> or the <code>intent</code> query from the
+        sign-in redirect. Place under <code>AuthProvider</code>.
+      </dd>
       <dt className="mono">AuthGuard</dt>
       <dd>
         Client route boundary over <code>useSession()</code>. Withholds children
-        while loading; applies the explicit policy when unauthenticated.
+        while loading; applies the explicit policy when unauthenticated. Uses
+        the same Unauthenticated policy as Guarded action.
       </dd>
       <dt className="mono">useGuardedAction(action, options)</dt>
       <dd>
         Hook that binds <code>withAuthGuard</code>. Requires an explicit live{" "}
         <code>readSession</code> (do not authorize mutations from a session seed
-        alone).
+        alone). Under <code>AuthGuardProvider</code>, pass{" "}
+        <code>pendingIntent</code> without a register adapter.
+      </dd>
+      <dt className="mono">resumeAfterAuthentication(options)</dt>
+      <dd>
+        Auth guard seam for Resume operation — validate, claim, navigate,
+        dispatch via pending-auth-action. Does not reimplement claim.
       </dd>
       <dt className="mono">normalizeRedirectTarget / isSafeRedirectTarget</dt>
       <dd>
-        Same-origin path/query normalization. Rejects absolute foreign URLs,
-        protocol-relative targets, and unsafe schemes.
+        Same-origin path/query normalization owned by pending-auth-action rules.
+        Rejects absolute foreign URLs, protocol-relative targets, and unsafe
+        schemes. Sign-in redirects include only a safe <code>returnTo</code>{" "}
+        query — never the Pending action intent payload.
       </dd>
       <dt className="mono">createInlineContinuation(options)</dt>
       <dd>
@@ -333,9 +381,9 @@ export const authGuardDocs: CompleteDocSlots = {
   ),
   limitations: [
     "Unauthenticated policy is required at every guard site. There is no default redirect.",
-    "redirect-and-resume fails closed with resume-unavailable when registerPendingIntent is missing. Install @app-kit/pending-auth-action separately; it is not a hard registry dependency of auth-guard.",
+    "Headless withAuthGuard / requireSession still return resume-unavailable for redirect-and-resume when neither pendingActionStore nor registerPendingIntent is provided.",
     "Session seed is UX-only. Guarded mutations must re-check the live session via readSession (typically adapter.getSession).",
-    "Import Session / AuthSnapshot / ReplayPolicy from @app-kit/authentication-core. This item owns UnauthenticatedPolicy only.",
-    "Manual-copy fallback: copy auth-guard.ts to src/lib/auth-guard.ts and auth-guard-boundary.tsx to src/components/auth-guard-boundary.tsx. Add @app-kit/authentication-core and @app-kit/error-classification registry dependencies.",
+    "Import Session / AuthSnapshot / ReplayPolicy from @app-kit/authentication-core. This item owns UnauthenticatedPolicy; PendingActionIntentInput is the pending-auth-action create-input shape (returnTo optional until resolved).",
+    "Manual-copy fallback: copy auth-guard.ts to src/lib/auth-guard.ts and auth-guard-boundary.tsx to src/components/auth-guard-boundary.tsx. Add @app-kit/pending-auth-action, @app-kit/authentication-core, and @app-kit/error-classification registry dependencies.",
   ],
 };

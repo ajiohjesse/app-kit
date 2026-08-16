@@ -1,12 +1,19 @@
-import { AuthGuardSmokeClient } from "./smoke-client";
+import {
+  AuthGuardResumeSmokeClient,
+  AuthGuardSmokeClient,
+} from "./smoke-client";
 import type { SessionSeed } from "../../../infra/authentication-core";
 
 export default async function AuthGuardSmokePage({
   searchParams,
 }: {
-  searchParams: Promise<{ revoked?: string }>;
+  searchParams: Promise<{ revoked?: string; resume?: string }>;
 }) {
   const params = await searchParams;
+  if (params.resume === "1") {
+    return <AuthGuardResumeSmokeClient />;
+  }
+
   const revoked = params.revoked === "1";
   const sessionSeed: SessionSeed = {
     user: { id: "user-1", name: "Test User" },

@@ -52,3 +52,16 @@ test("revoked live session cannot run a guarded mutation", async ({ page }) => {
   await page.getByRole("button", { name: "Guarded save" }).click();
   await expect(page.getByText("authentication-required")).toBeVisible();
 });
+
+test("redirect-and-resume stores intent then resumes after sign-in", async ({
+  page,
+}) => {
+  await page.goto("/auth-guard-smoke?resume=1");
+
+  await expect(page.getByText("status:unauthenticated")).toBeVisible();
+  await page.getByRole("button", { name: "Guarded resume save" }).click();
+  await expect(page.getByText(/result:registered:/)).toBeVisible();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByText("result:resumed")).toBeVisible();
+  await expect(page.getByText("path:/invoices/inv-1")).toBeVisible();
+});

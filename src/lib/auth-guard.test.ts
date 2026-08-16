@@ -5,9 +5,14 @@ import {
   isSafeRedirectTarget,
   normalizeRedirectTarget,
   requireSession,
+  resumeAfterAuthentication,
   withAuthGuard,
   type UnauthenticatedPolicy,
 } from "../../infra/auth-guard";
+import {
+  createMemoryPendingActionStore,
+  createPendingActionHandlerRegistry,
+} from "../../infra/pending-auth-action";
 
 const session: Session = {
   user: { id: "user-1", name: "Ada" },
@@ -99,7 +104,7 @@ describe("withAuthGuard", () => {
     });
   });
 
-  it("redirect-without-resume navigates and never registers a pending intent", async () => {
+  it("redirect-without-resume navigates and never writes a pending intent", async () => {
     const navigate = vi.fn();
     const registerPendingIntent = vi.fn();
     const guarded = withAuthGuard(async () => "ok", {
@@ -109,19 +114,27 @@ describe("withAuthGuard", () => {
       navigate,
       getCurrentPath: () => "/billing",
       registerPendingIntent,
+      pendingIntent: {
+        kind: "save-draft",
+        version: 1,
+        payload: { draftId: "d1" },
+        idempotencyKey: "save-d1",
+        replayPolicy: "mutation",
+        returnTo: "/drafts/d1",
+      },
     });
 
     const result = await guarded({});
     expect(result).toEqual({
       status: "authentication-required",
       policy: "redirect-without-resume",
-      redirectTo: "/sign-in",
+      redirectTo: "/sign-in?returnTo=%2Fbilling",
     });
-    expect(navigate).toHaveBeenCalledWith("/sign-in");
+    expect(navigate).toHaveBeenCalledWith("/sign-in?returnTo=%2Fbilling");
     expect(registerPendingIntent).not.toHaveBeenCalled();
   });
 
-  it("redirect-and-resume fails closed when pending registration is missing", async () => {
+  it("redirect-and-resume fails closed when pending store and register are missing", async () => {
     const navigate = vi.fn();
     const guarded = withAuthGuard(async () => "ok", {
       readSession: async () => unauthenticated,
@@ -144,15 +157,16 @@ describe("withAuthGuard", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("redirect-and-resume registers then navigates", async () => {
+  it("redirect-and-resume stores a pending intent then navigates to sign-in with safe return-to", async () => {
     const navigate = vi.fn();
-    const registerPendingIntent = vi.fn(async () => ({ id: "intent-1" }));
+    const store = createMemoryPendingActionStore();
     const guarded = withAuthGuard(async () => "ok", {
       readSession: async () => unauthenticated,
       policy: "redirect-and-resume",
       signInTo: "/sign-in",
       navigate,
-      registerPendingIntent,
+      origin: "https://app.test",
+      pendingActionStore: store,
       pendingIntent: {
         kind: "save-draft",
         version: 1,
@@ -163,19 +177,88 @@ describe("withAuthGuard", () => {
       },
     });
 
-    await expect(guarded({})).resolves.toEqual({
-      status: "authentication-required",
-      policy: "redirect-and-resume",
-      redirectTo: "/sign-in",
-      intentId: "intent-1",
-    });
-    expect(registerPendingIntent).toHaveBeenCalledWith(
+    const result = await guarded({});
+    expect(result.status).toBe("authentication-required");
+    if (result.status !== "authentication-required") {
+      throw new Error("expected authentication-required");
+    }
+    expect(result.policy).toBe("redirect-and-resume");
+    expect(result.intentId).toEqual(expect.any(String));
+    expect(result.redirectTo).toBe(
+      `/sign-in?returnTo=${encodeURIComponent("/drafts/d1")}&intent=${result.intentId}`
+    );
+    expect(navigate).toHaveBeenCalledWith(result.redirectTo);
+    expect(result.redirectTo).not.toContain("draftId");
+    expect(result.redirectTo).not.toMatch(/save-draft/);
+
+    const stored = await store.read(result.intentId!);
+    expect(stored).toEqual(
       expect.objectContaining({
         kind: "save-draft",
         returnTo: "/drafts/d1",
+        payload: { draftId: "d1" },
+        idempotencyKey: "save-d1",
       })
     );
-    expect(navigate).toHaveBeenCalledWith("/sign-in");
+  });
+
+  it("redirect-and-resume rewrites unsafe return-to before storing", async () => {
+    const store = createMemoryPendingActionStore();
+    const guarded = withAuthGuard(async () => "ok", {
+      readSession: async () => unauthenticated,
+      policy: "redirect-and-resume",
+      signInTo: "/sign-in",
+      navigate: vi.fn(),
+      origin: "https://app.test",
+      fallbackReturnTo: "/safe",
+      pendingActionStore: store,
+      pendingIntent: {
+        kind: "open",
+        version: 1,
+        payload: {},
+        idempotencyKey: "open-1",
+        replayPolicy: "read",
+        returnTo: "https://evil.test/phish",
+      },
+    });
+
+    const result = await guarded({});
+    expect(result.status).toBe("authentication-required");
+    if (result.status !== "authentication-required" || !result.intentId) {
+      throw new Error("expected intent");
+    }
+    const stored = await store.read(result.intentId);
+    expect(stored?.returnTo).toBe("/safe");
+    expect(result.redirectTo).toBe(
+      `/sign-in?returnTo=${encodeURIComponent("/safe")}&intent=${result.intentId}`
+    );
+  });
+
+  it("defaults return-to to the current path when omitted", async () => {
+    const store = createMemoryPendingActionStore();
+    const guarded = withAuthGuard(async () => "ok", {
+      readSession: async () => unauthenticated,
+      policy: "redirect-and-resume",
+      signInTo: "/sign-in",
+      navigate: vi.fn(),
+      getCurrentPath: () => "/settings/profile",
+      pendingActionStore: store,
+      pendingIntent: {
+        kind: "open",
+        version: 1,
+        payload: {},
+        idempotencyKey: "open-1",
+        replayPolicy: "read",
+      },
+    });
+
+    const result = await guarded({});
+    if (result.status !== "authentication-required" || !result.intentId) {
+      throw new Error("expected intent");
+    }
+    expect((await store.read(result.intentId))?.returnTo).toBe(
+      "/settings/profile"
+    );
   });
 
   it("inline returns a one-shot continuation handle", async () => {
@@ -243,16 +326,17 @@ describe("requireSession", () => {
         policy: "redirect-without-resume",
         signInTo: "/sign-in",
         navigate,
+        getCurrentPath: () => "/billing",
       })
     ).resolves.toEqual({
       status: "authentication-required",
       policy: "redirect-without-resume",
-      redirectTo: "/sign-in",
+      redirectTo: "/sign-in?returnTo=%2Fbilling",
     });
-    expect(navigate).toHaveBeenCalledWith("/sign-in");
+    expect(navigate).toHaveBeenCalledWith("/sign-in?returnTo=%2Fbilling");
   });
 
-  it("fails closed for redirect-and-resume without pending registration", async () => {
+  it("fails closed for redirect-and-resume without pending store", async () => {
     await expect(
       requireSession({
         readSession: async () => unauthenticated,
@@ -268,6 +352,148 @@ describe("requireSession", () => {
         },
       })
     ).resolves.toEqual({ status: "resume-unavailable" });
+  });
+});
+
+describe("resumeAfterAuthentication", () => {
+  it("claims once, navigates to return-to, and dispatches the pending handler", async () => {
+    const store = createMemoryPendingActionStore();
+    const handlers = createPendingActionHandlerRegistry();
+    const navigate = vi.fn();
+    let dispatched = 0;
+    handlers.register("save-draft", async ({ session }) => {
+      expect(session.user.id).toBe("user-1");
+      dispatched += 1;
+      return { status: "succeeded" };
+    });
+
+    const guarded = withAuthGuard(async () => "ok", {
+      readSession: async () => unauthenticated,
+      policy: "redirect-and-resume",
+      signInTo: "/sign-in",
+      navigate: vi.fn(),
+      pendingActionStore: store,
+      pendingIntent: {
+        kind: "save-draft",
+        version: 1,
+        payload: { draftId: "d1" },
+        idempotencyKey: "save-d1",
+        replayPolicy: "read",
+        returnTo: "/drafts/d1",
+        userId: "user-1",
+      },
+    });
+    const registered = await guarded({});
+    if (
+      registered.status !== "authentication-required" ||
+      !registered.intentId
+    ) {
+      throw new Error("expected intent");
+    }
+
+    const first = await resumeAfterAuthentication({
+      intentId: registered.intentId,
+      store,
+      handlers,
+      getSession: async () => session,
+      navigate,
+      allowMutationReplay: false,
+    });
+    const second = await resumeAfterAuthentication({
+      intentId: registered.intentId,
+      store,
+      handlers,
+      getSession: async () => session,
+      navigate,
+      allowMutationReplay: false,
+    });
+
+    expect(first).toEqual({
+      status: "succeeded",
+      intentId: registered.intentId,
+    });
+    expect(second).toEqual({ status: "consumed" });
+    expect(dispatched).toBe(1);
+    expect(navigate).toHaveBeenCalledWith("/drafts/d1");
+  });
+
+  it("rejects user mismatch without claiming", async () => {
+    const store = createMemoryPendingActionStore();
+    const handlers = createPendingActionHandlerRegistry();
+    handlers.register("save-draft", async () => ({ status: "succeeded" }));
+
+    const guarded = withAuthGuard(async () => "ok", {
+      readSession: async () => unauthenticated,
+      policy: "redirect-and-resume",
+      navigate: vi.fn(),
+      pendingActionStore: store,
+      pendingIntent: {
+        kind: "save-draft",
+        version: 1,
+        payload: {},
+        idempotencyKey: "k",
+        replayPolicy: "read",
+        returnTo: "/app",
+        userId: "user-1",
+      },
+    });
+    const registered = await guarded({});
+    if (
+      registered.status !== "authentication-required" ||
+      !registered.intentId
+    ) {
+      throw new Error("expected intent");
+    }
+
+    await expect(
+      resumeAfterAuthentication({
+        intentId: registered.intentId,
+        store,
+        handlers,
+        getSession: async () => ({
+          user: { id: "user-2", name: "Other" },
+          expiresAt: "2030-01-01T00:00:00.000Z",
+        }),
+        navigate: vi.fn(),
+      })
+    ).resolves.toEqual({ status: "user-mismatch" });
+    expect(await store.read(registered.intentId)).not.toBeNull();
+  });
+
+  it("fails closed for unknown handler kinds", async () => {
+    const store = createMemoryPendingActionStore();
+    const handlers = createPendingActionHandlerRegistry();
+    const guarded = withAuthGuard(async () => "ok", {
+      readSession: async () => unauthenticated,
+      policy: "redirect-and-resume",
+      navigate: vi.fn(),
+      pendingActionStore: store,
+      pendingIntent: {
+        kind: "missing-kind",
+        version: 1,
+        payload: {},
+        idempotencyKey: "k",
+        replayPolicy: "read",
+        returnTo: "/app",
+      },
+    });
+    const registered = await guarded({});
+    if (
+      registered.status !== "authentication-required" ||
+      !registered.intentId
+    ) {
+      throw new Error("expected intent");
+    }
+
+    await expect(
+      resumeAfterAuthentication({
+        intentId: registered.intentId,
+        store,
+        handlers,
+        getSession: async () => session,
+        navigate: vi.fn(),
+      })
+    ).resolves.toEqual({ status: "missing-handler" });
   });
 });
 

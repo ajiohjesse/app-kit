@@ -3,22 +3,32 @@ import {
   classifyError,
   type ErrorClassification,
 } from "@/infra/error-classification";
+import {
+  createPendingActionIntent,
+  createResumeOperation,
+  isSafeReturnTo,
+  resolveReturnTo as resolvePendingReturnTo,
+  type CreatePendingActionIntentInput,
+  type PendingActionHandlerRegistry,
+  type PendingActionStore,
+  type ResumeInput,
+  type ResumeOperationOptions,
+  type ResumeResult,
+} from "@/infra/pending-auth-action";
 
 export type UnauthenticatedPolicy =
   "redirect-without-resume" | "redirect-and-resume" | "inline";
 
-export type PendingActionIntentDescriptor = {
-  kind: string;
-  version: number;
-  payload: unknown;
-  idempotencyKey: string;
-  replayPolicy: "read" | "mutation";
+/** Pending action create-input; returnTo optional until Auth guard resolves it. */
+export type PendingActionIntentInput = Omit<
+  CreatePendingActionIntentInput,
+  "now" | "maxPayloadBytes" | "returnTo" | "id" | "expiresAt" | "ttlMs"
+> & {
   returnTo?: string;
-  userId?: string | null;
 };
 
 export type RegisterPendingIntent = (
-  intent: PendingActionIntentDescriptor
+  intent: PendingActionIntentInput & { returnTo: string }
 ) => Promise<{ id: string } | void>;
 
 export type AuthGuardNavigate = (to: string) => Promise<void> | void;
@@ -74,10 +84,12 @@ export type WithAuthGuardOptions<TInput> = {
   getCurrentPath?: () => string;
   fallbackReturnTo?: string;
   origin?: string;
+  /** Headless optional register adapter. Prefer pendingActionStore under AuthGuardProvider. */
   registerPendingIntent?: RegisterPendingIntent;
+  /** Pending-action store used for the default redirect-and-resume path. */
+  pendingActionStore?: PendingActionStore;
   pendingIntent?:
-    | PendingActionIntentDescriptor
-    | ((input: TInput) => PendingActionIntentDescriptor);
+    PendingActionIntentInput | ((input: TInput) => PendingActionIntentInput);
   continuationTtlMs?: number;
   now?: () => number;
 };
@@ -91,7 +103,8 @@ export type RequireSessionOptions = {
   fallbackReturnTo?: string;
   origin?: string;
   registerPendingIntent?: RegisterPendingIntent;
-  pendingIntent?: PendingActionIntentDescriptor;
+  pendingActionStore?: PendingActionStore;
+  pendingIntent?: PendingActionIntentInput;
   signal?: AbortSignal;
 };
 
@@ -107,80 +120,56 @@ function resolveOrigin(origin?: string): string {
   return "http://localhost";
 }
 
+/** Same-origin safe redirect check — delegates to pending-auth-action. */
 export function isSafeRedirectTarget(
   target: string,
   origin = resolveOrigin()
 ): boolean {
-  if (typeof target !== "string" || target === "") {
-    return false;
-  }
-  if (target.startsWith("//") || target.includes("://")) {
-    try {
-      const url = new URL(target, origin);
-      return (
-        url.origin === origin &&
-        (url.protocol === "http:" || url.protocol === "https:")
-      );
-    } catch {
-      return false;
-    }
-  }
-  if (!target.startsWith("/")) {
-    return false;
-  }
-  if (target.startsWith("\\") || target.includes("\\")) {
-    return false;
-  }
-  return true;
+  return isSafeReturnTo(target, origin);
 }
 
+/** Normalize a redirect target — delegates to pending-auth-action resolveReturnTo. */
 export function normalizeRedirectTarget(
   target: string,
   options: { origin?: string; fallback?: string } = {}
 ): string {
-  const origin = resolveOrigin(options.origin);
-  const fallback = options.fallback ?? "/";
-  if (isSafeRedirectTarget(target, origin)) {
-    if (target.startsWith("/") && !target.includes("://")) {
-      return target;
-    }
-    try {
-      const url = new URL(target, origin);
-      return `${url.pathname}${url.search}${url.hash}`;
-    } catch {
-      return isSafeRedirectTarget(fallback, origin) ? fallback : "/";
-    }
-  }
-  return isSafeRedirectTarget(fallback, origin) ? fallback : "/";
-}
-
-function resolveSignInTo(
-  signInTo: string | undefined,
-  options: { origin?: string; fallbackReturnTo?: string }
-): string {
-  return normalizeRedirectTarget(signInTo ?? "/sign-in", {
-    origin: options.origin,
-    fallback: options.fallbackReturnTo ?? "/",
+  return resolvePendingReturnTo(target, {
+    origin: resolveOrigin(options.origin),
+    fallbackReturnTo: options.fallback ?? "/",
   });
 }
 
-function resolveReturnTo(
-  pending: PendingActionIntentDescriptor | undefined,
+function resolveSafeReturnTo(
+  candidate: string | undefined,
   options: {
     getCurrentPath?: () => string;
     fallbackReturnTo?: string;
     origin?: string;
   }
 ): string {
-  const candidate =
-    pending?.returnTo ??
-    options.getCurrentPath?.() ??
-    options.fallbackReturnTo ??
-    "/";
-  return normalizeRedirectTarget(candidate, {
+  const value =
+    candidate ?? options.getCurrentPath?.() ?? options.fallbackReturnTo ?? "/";
+  return resolvePendingReturnTo(value, {
+    origin: resolveOrigin(options.origin),
+    fallbackReturnTo: options.fallbackReturnTo ?? "/",
+  });
+}
+
+function buildSignInRedirect(
+  signInTo: string | undefined,
+  returnTo: string,
+  options: { origin?: string; fallbackReturnTo?: string; intentId?: string }
+): string {
+  const signInPath = normalizeRedirectTarget(signInTo ?? "/sign-in", {
     origin: options.origin,
     fallback: options.fallbackReturnTo ?? "/",
   });
+  const url = new URL(signInPath, resolveOrigin(options.origin));
+  url.searchParams.set("returnTo", returnTo);
+  if (options.intentId) {
+    url.searchParams.set("intent", options.intentId);
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 async function runAuthorize<TInput>(
@@ -287,6 +276,38 @@ export function createInlineContinuation<TInput, TResult>(
   };
 }
 
+async function registerPendingActionIntent(options: {
+  pendingIntent: PendingActionIntentInput;
+  returnTo: string;
+  registerPendingIntent?: RegisterPendingIntent;
+  pendingActionStore?: PendingActionStore;
+  now?: () => number;
+}): Promise<{ id?: string }> {
+  if (options.pendingActionStore) {
+    const registered = await createStoreRegisterPendingIntent(
+      options.pendingActionStore,
+      { now: options.now }
+    )({
+      ...options.pendingIntent,
+      returnTo: options.returnTo,
+    });
+    return registered ?? {};
+  }
+
+  if (!options.registerPendingIntent) {
+    throw new Error("resume-unavailable");
+  }
+
+  const registered = await options.registerPendingIntent({
+    ...options.pendingIntent,
+    returnTo: options.returnTo,
+  });
+  if (registered && typeof registered === "object" && registered.id) {
+    return { id: registered.id };
+  }
+  return {};
+}
+
 async function handleUnauthenticated<TResult>(options: {
   policy: UnauthenticatedPolicy;
   signInTo?: string;
@@ -295,7 +316,9 @@ async function handleUnauthenticated<TResult>(options: {
   fallbackReturnTo?: string;
   origin?: string;
   registerPendingIntent?: RegisterPendingIntent;
-  pendingIntent?: PendingActionIntentDescriptor;
+  pendingActionStore?: PendingActionStore;
+  pendingIntent?: PendingActionIntentInput;
+  now?: () => number;
   createContinuation?: () => InlineContinuation<TResult>;
 }): Promise<GuardedActionResult<TResult>> {
   if (options.policy === "inline") {
@@ -306,17 +329,32 @@ async function handleUnauthenticated<TResult>(options: {
     };
   }
 
+  const returnTo = resolveSafeReturnTo(
+    options.policy === "redirect-and-resume"
+      ? options.pendingIntent?.returnTo
+      : undefined,
+    options
+  );
+
   if (options.policy === "redirect-and-resume") {
-    if (!options.registerPendingIntent || !options.pendingIntent) {
+    if (
+      !options.pendingIntent ||
+      (!options.registerPendingIntent && !options.pendingActionStore)
+    ) {
       return { status: "resume-unavailable" };
     }
-    const returnTo = resolveReturnTo(options.pendingIntent, options);
     try {
-      const registered = await options.registerPendingIntent({
-        ...options.pendingIntent,
+      const registered = await registerPendingActionIntent({
+        pendingIntent: options.pendingIntent,
         returnTo,
+        registerPendingIntent: options.registerPendingIntent,
+        pendingActionStore: options.pendingActionStore,
+        now: options.now,
       });
-      const redirectTo = resolveSignInTo(options.signInTo, options);
+      const redirectTo = buildSignInRedirect(options.signInTo, returnTo, {
+        ...options,
+        intentId: registered.id,
+      });
       if (options.navigate) {
         await options.navigate(redirectTo);
       }
@@ -324,12 +362,12 @@ async function handleUnauthenticated<TResult>(options: {
         status: "authentication-required",
         policy: "redirect-and-resume",
         redirectTo,
-        intentId:
-          registered && typeof registered === "object"
-            ? registered.id
-            : undefined,
-      };
+        intentId: registered.id,
+      } satisfies GuardedActionResult<TResult>;
     } catch (error) {
+      if (error instanceof Error && error.message === "resume-unavailable") {
+        return { status: "resume-unavailable" };
+      }
       return {
         status: "registration-failed",
         error: classifyError(error, { operation: "register-pending-intent" }),
@@ -338,7 +376,7 @@ async function handleUnauthenticated<TResult>(options: {
   }
 
   // redirect-without-resume — never write a pending intent
-  const redirectTo = resolveSignInTo(options.signInTo, options);
+  const redirectTo = buildSignInRedirect(options.signInTo, returnTo, options);
   if (options.navigate) {
     await options.navigate(redirectTo);
   }
@@ -351,11 +389,11 @@ async function handleUnauthenticated<TResult>(options: {
 
 function resolvePendingIntent<TInput>(
   pendingIntent:
-    | PendingActionIntentDescriptor
-    | ((input: TInput) => PendingActionIntentDescriptor)
+    | PendingActionIntentInput
+    | ((input: TInput) => PendingActionIntentInput)
     | undefined,
   input: TInput
-): PendingActionIntentDescriptor | undefined {
+): PendingActionIntentInput | undefined {
   if (!pendingIntent) {
     return undefined;
   }
@@ -404,7 +442,9 @@ export function withAuthGuard<TInput, TResult>(
         fallbackReturnTo: options.fallbackReturnTo,
         origin: options.origin,
         registerPendingIntent: options.registerPendingIntent,
+        pendingActionStore: options.pendingActionStore,
         pendingIntent: resolvePendingIntent(options.pendingIntent, input),
+        now,
         createContinuation: () =>
           createInlineContinuation({
             input,
@@ -448,7 +488,9 @@ export function withAuthGuard<TInput, TResult>(
         fallbackReturnTo: options.fallbackReturnTo,
         origin: options.origin,
         registerPendingIntent: options.registerPendingIntent,
+        pendingActionStore: options.pendingActionStore,
         pendingIntent: resolvePendingIntent(options.pendingIntent, input),
+        now,
         createContinuation: () =>
           createInlineContinuation({
             input,
@@ -513,6 +555,7 @@ export async function requireSession(
     fallbackReturnTo: options.fallbackReturnTo,
     origin: options.origin,
     registerPendingIntent: options.registerPendingIntent,
+    pendingActionStore: options.pendingActionStore,
     pendingIntent: options.pendingIntent,
   });
 
@@ -532,3 +575,48 @@ export async function requireSession(
   }
   return { status: "pending" };
 }
+
+export type ResumeAfterAuthenticationOptions = ResumeOperationOptions &
+  ResumeInput;
+
+/**
+ * Auth guard seam for Resume operation. Delegates claim/navigate/dispatch to
+ * pending-auth-action; does not reimplement store claim.
+ */
+export function resumeAfterAuthentication(
+  options: ResumeAfterAuthenticationOptions
+): Promise<ResumeResult> {
+  const { intentId, signal, ...operationOptions } = options;
+  return createResumeOperation(operationOptions)({ intentId, signal });
+}
+
+/**
+ * Read a Pending action intent id from the sign-in redirect query (`intent`).
+ * Safe for AuthGuardProvider resumeIntentId after authentication.
+ */
+export function readResumeIntentIdFromLocation(
+  search: string = typeof window !== "undefined" ? window.location.search : ""
+): string | null {
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search
+  );
+  const intent = params.get("intent");
+  return intent && intent.length > 0 ? intent : null;
+}
+
+/** Build a headless register adapter over a Pending-action store. */
+export function createStoreRegisterPendingIntent(
+  store: PendingActionStore,
+  options: { now?: () => number } = {}
+): RegisterPendingIntent {
+  return async (intent) => {
+    const saved = createPendingActionIntent({
+      ...intent,
+      now: options.now,
+    });
+    await store.save(saved);
+    return { id: saved.id };
+  };
+}
+
+export type { ResumeResult, PendingActionStore, PendingActionHandlerRegistry };

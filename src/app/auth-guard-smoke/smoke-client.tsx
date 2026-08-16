@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   AuthProvider,
+  useAuth,
   useSession,
 } from "../../../infra/authentication-core-provider";
 import type {
@@ -11,7 +12,14 @@ import type {
   Session,
   SessionSeed,
 } from "../../../infra/authentication-core";
-import { AuthGuard, withAuthGuard } from "../../../infra/auth-guard-boundary";
+import {
+  AuthGuard,
+  AuthGuardProvider,
+  useGuardedAction,
+  withAuthGuard,
+} from "../../../infra/auth-guard-boundary";
+import { createMemoryPendingActionStore } from "../../../infra/pending-auth-action";
+import { PendingActionHandlerRegistration } from "../../../infra/pending-auth-action-provider";
 
 const liveSession: Session = {
   user: { id: "user-1", name: "Test User" },
@@ -19,10 +27,16 @@ const liveSession: Session = {
 };
 
 function createSmokeAdapter(revoked: boolean): AuthenticationAdapter {
+  let live: Session | null = revoked ? null : liveSession;
   return {
-    getSession: async () => (revoked ? null : liveSession),
-    signIn: async () => ({ status: "authenticated", session: liveSession }),
-    signOut: async () => undefined,
+    getSession: async () => live,
+    signIn: async () => {
+      live = liveSession;
+      return { status: "authenticated", session: liveSession };
+    },
+    signOut: async () => {
+      live = null;
+    },
   };
 }
 
@@ -74,6 +88,60 @@ function SmokeBody({
   );
 }
 
+function ResumeSmokeBody({
+  adapter,
+  path,
+  navigate,
+  result,
+  setResult,
+}: {
+  adapter: AuthenticationAdapter;
+  path: string;
+  navigate: (to: string) => void;
+  result: string;
+  setResult: (value: string) => void;
+}) {
+  const auth = useAuth();
+
+  const save = useGuardedAction(async () => "saved", {
+    readSession: async () => snapshotFromLive(await adapter.getSession()),
+    policy: "redirect-and-resume",
+    signInTo: "/sign-in",
+    navigate,
+    getCurrentPath: () => path,
+    pendingIntent: {
+      kind: "open-invoice",
+      version: 1,
+      payload: { invoiceId: "inv-1" },
+      idempotencyKey: "open-inv-1",
+      replayPolicy: "read",
+      returnTo: "/invoices/inv-1",
+    },
+  });
+
+  return (
+    <main>
+      <h1>{auth.user?.name ?? auth.status}</h1>
+      <p>status:{auth.status}</p>
+      <p>path:{path}</p>
+      <p>result:{result}</p>
+      <PendingActionHandlerRegistration
+        kind="open-invoice"
+        handler={async () => {
+          setResult("resumed");
+          return { status: "succeeded" };
+        }}
+      />
+      <button type="button" onClick={() => void save({})}>
+        Guarded resume save
+      </button>
+      <button type="button" onClick={() => void auth.signIn()}>
+        Sign in
+      </button>
+    </main>
+  );
+}
+
 export function AuthGuardSmokeClient({
   sessionSeed,
   revoked,
@@ -86,6 +154,48 @@ export function AuthGuardSmokeClient({
   return (
     <AuthProvider adapter={adapter} sessionSeed={sessionSeed}>
       <SmokeBody adapter={adapter} revoked={revoked} />
+    </AuthProvider>
+  );
+}
+
+export function AuthGuardResumeSmokeClient() {
+  const adapter = useMemo(() => createSmokeAdapter(true), []);
+  const store = useMemo(() => createMemoryPendingActionStore(), []);
+  const [path, setPath] = useState("/");
+  const [result, setResult] = useState("idle");
+  const [resumeIntentId, setResumeIntentId] = useState<string | null>(null);
+
+  const navigate = (to: string) => {
+    setPath(to);
+    const intent = new URL(to, "https://app.test").searchParams.get("intent");
+    if (intent) {
+      setResumeIntentId(intent);
+      setResult(`registered:${intent}`);
+    }
+  };
+
+  return (
+    <AuthProvider adapter={adapter}>
+      <AuthGuardProvider
+        store={store}
+        navigate={navigate}
+        resumeIntentId={resumeIntentId}
+        onResumeResult={(outcome) => {
+          if (outcome.status === "succeeded") {
+            setResult("resumed");
+          } else {
+            setResult(outcome.status);
+          }
+        }}
+      >
+        <ResumeSmokeBody
+          adapter={adapter}
+          path={path}
+          navigate={navigate}
+          result={result}
+          setResult={setResult}
+        />
+      </AuthGuardProvider>
     </AuthProvider>
   );
 }
